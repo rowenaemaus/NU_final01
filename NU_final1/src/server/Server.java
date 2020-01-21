@@ -67,7 +67,6 @@ public class Server implements Runnable {
 							printMessage("Unable to connect client");
 							// TODO en nu?
 						}
-						System.out.println("client connected: " + handler.getConnected());
 					} else {
 						printMessage(String.format("Max handlers connected. Unable to add handler for [%s] to server right now.", name));
 						printMessage("Please wait for a game to end and try to reconnect.");
@@ -76,6 +75,9 @@ public class Server implements Runnable {
 					}
 				}
 			} catch (Exception e1) {
+				System.out.println("server flag1");
+				System.out.println(e1);
+				e1.printStackTrace();
 				openNewSocket = false;
 			}
 		}
@@ -98,6 +100,8 @@ public class Server implements Runnable {
 				printMessage(String.format("Trying to open a socket at %s on port %d", IPAddress, port));
 				ssock = new ServerSocket(port, 0, InetAddress.getByName(IPAddress));
 				printMessage("Server started at port " + port);
+				printMessage("----------------------------------------------");
+				printMessage("----------------------------------------------");
 			} catch (IOException e) {
 				printMessage(String.format("WARNING: Attempt %d: could not create socket on port %d", attempts, port));
 				attempts++;
@@ -116,16 +120,19 @@ public class Server implements Runnable {
 
 		for (ClientHandler c : handlers) {
 			if (c.getConnected() && !c.getPlaying() && !c.equals(c1)) {
-				printMessage(String.format("Opponent found for %s!", c1.getName()));
+				printMessage(String.format("Opponent found for %s!", c1.getName())); 
 				opponent = c;
+				printMessage(String.format("Starting the epic battle: %s vs. %s", c1.getName(), opponent.getName()));
 			}
 		}
 
 		if (opponent == null) {
 			printMessage("No opponent found! Please wait until another user tries to connect.");
+			printMessage("...");
 			return;
 		}
 		if (games.size() < maxGames) {
+			printMessage("Max number of games not reached, starting a new battle.");
 			// TODO notify de spelers ook met een sendMessage ofzo
 			Game g = new Game(c1, opponent, this);
 			games.add(g);
@@ -136,8 +143,8 @@ public class Server implements Runnable {
 	}
 	
 	public void endGame(Game g) {
-		handlers.remove(g.c1);
-		handlers.remove(g.c2);
+		handlers.remove(g.getc1());
+		handlers.remove(g.getc2());
 		games.remove(g);
 	}
 

@@ -2,6 +2,7 @@ package player;
 
 public interface Player {
 
-	String determineMove();
+	// determine move, read input and returns as int
+	public int determineMove();
 
 }

@@ -5,10 +5,9 @@ public class Test {
 		GoGUIIntegrator g = new GoGUIIntegrator(true, true, 10);
 		g.startGUI();
 		g.setBoardSize(10);
-
 	}
-	
- public static void main (String[] args) {
-	 new Test();
- }
+
+	public static void main (String[] args) {
+		new Test();
+	}
 }

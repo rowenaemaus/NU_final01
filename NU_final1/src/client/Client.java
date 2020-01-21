@@ -8,41 +8,54 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import Protocol.ProtocolMessages;
 import exceptions.HandShakeException;
 import exceptions.ServerUnavailableException;
+import goGame.GoGame;
 import player.HumanPlayer;
 import player.Player;
 
 public class Client implements Runnable{
 	private String host;
+	private int port;
 	private Socket socket;
+
 	private BufferedReader in;
 	private BufferedWriter out;
+
 	private Player player;
-	private int port;
+	private GoGame go;
+	private String protocolVersion;
+	private String name;
 
 	private boolean connected;
-	
+	private boolean colourSet;
+
 	public Client() {
-		host = "10.48.8.150";
+		host = "10.48.8.101";
 		port = 8070;
 		socket = null;
 		connected = false;
+		colourSet = false;
+		player = new HumanPlayer();
+		protocolVersion = "1.0";
+		name = "Rowena";
 	}
-	
+
 	// start listening continuously for ending the game from server side
 
 	// loop over this:
 	// when turn pass to player
 	// call getMove();
 	// validate input
-	// methode om opnieuw te proberen : hoe bij hoe vaak
+	// methode om opnieuw te proberen : hou bij hoe vaak
 
 	// zodra valide; stuur naar de handler.
 
 
 	@Override
 	public void run() {
+
 		try {
 			boolean socketConnect = createConnection();
 			try {
@@ -61,20 +74,27 @@ public class Client implements Runnable{
 		} catch (ServerUnavailableException e) {
 			e.printStackTrace();
 		}
-//		Player player = new HumanPlayer();
-//		String msg = null;
-//		try {
-//			msg = in.readLine();
-//			while (msg != null) {
-//				printMessage("> Server message: " + msg);
-//				handleCommand(msg);
-//				out.newLine();
-//				out.flush();
-//				msg = in.readLine();
-//			}
-//		} catch (IOException e) {
-//			closeConnection();
-//		}
+
+		printMessage("Setting up GO game handler.");
+		go = new GoGame(10, this);
+		System.out.println("client.java flag1");
+		new Thread(go).start();
+		System.out.println("client flag2");
+		player = new HumanPlayer();
+		String msg = null;
+		try {
+			msg = in.readLine();
+			while (msg != null) {
+				printMessage("> Server message: " + msg);
+				handleCommand(msg);
+				out.newLine();
+				out.flush();
+				msg = in.readLine();
+			}
+		} catch (IOException e) {
+			System.out.println(e);
+			closeConnection();
+		}
 	}
 
 	public boolean createConnection() {
@@ -98,7 +118,7 @@ public class Client implements Runnable{
 	}
 
 	public void doHandshake() throws HandShakeException {
-		String outHS = "H";
+		String outHS = ProtocolMessages.HANDSHAKE + ProtocolMessages.DELIMITER + protocolVersion + ProtocolMessages.DELIMITER + name; //+ PROTOCOL.delimiter + message (string)
 		try {
 			sendMessage(outHS);
 		} catch (ServerUnavailableException e1) {
@@ -107,60 +127,89 @@ public class Client implements Runnable{
 		printMessage("Outward handshake sent.");
 
 		char serverHS = 0;
-		String incomingHS = null;
+		String serverProtocolVersion = null;
 		try {
-			incomingHS = in.readLine();
+			String incomingHS = in.readLine();
 			printMessage("Received handshake: '" + incomingHS + "'");
-			serverHS = incomingHS.charAt(0);
+			String[] messages = incomingHS.split(ProtocolMessages.DELIMITER);
+			serverHS = messages[0].charAt(0);
+			serverProtocolVersion = messages[1];
 			printMessage("Checking inward handshake...");
 		} catch (IOException e) {
 			printMessage("ERROR: unable to read incoming handshake from server.");
 			e.printStackTrace();
 		}
 
-		if (serverHS == 'H') {
+		if (serverHS == 'H' && protocolVersion.equals(serverProtocolVersion)) {
 			printMessage("Handshake correct! Connection established.");
 		} else {
 			throw new HandShakeException("Wrong handshake provided!");
 		}
 	}
 
-	public boolean tryAgain() {
-		// TODO ask to try and reconnect again
-		return false;
-	}
-	
-	// basically handling 
 	public void handleCommand(String msg) {
-		// TODO aanpassen according to protocol
 		char command = (msg.length() > 0) ? msg.charAt(0) : null;
-		char space = 0;
-		if (msg.length() > 1) {
-			space = msg.charAt(1);
-			if (!(space == ' ')) {
+		if (msg.length() > 1) {	
+			if (!(msg.substring(1,1).equals(ProtocolMessages.DELIMITER))) {
 				printMessage("Invalid command character");
 				return;
 			}
 		}
 
-		String[] cmds = msg.split(" ");
-		String firstCmd = (cmds.length > 1) ? cmds[1] : null;
-		String secondCmd = (cmds.length > 2) ? cmds[2] : null;
-		
+		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
+		//		String firstCmd = (cmds.length > 1) ? cmds[1] : null;
+		//		String secondCmd = (cmds.length > 2) ? cmds[2] : null;
+
 		switch(command) { 
-		case 'x' :
-			printMessage("Server ends the connection.");
+		case ProtocolMessages.GAME :
+			startGame();
 			break;
-		case 't' :
-			player.determineMove();
+		case ProtocolMessages.TURN :
+			doTurn();
+			break;
+		case ProtocolMessages.RESULT :
+			handleResult();
+			break;
+		case ProtocolMessages.END :
+			handleEnd();
 			break;
 		}
-		
-		
-		
-		
-		
-		// TODO what to do with command
+	}
+
+	// start game
+	// PROTOCOL.game + PROTOCOL.delimiter + bord + PROTOCOL.delimiter + PROTOCOL.white/black
+	// colour command
+	// stuur naar de player jo je krijgt deze kleur
+	// stuur naar GoGame jo je krijgt deze kleur
+	public void startGame() {		
+	}
+
+	// srv geeft beurt
+	// PROTOCOL.turn + PROTOCOL.delimiter + bord
+	public void doTurn() {
+		boolean valid = false;
+		Integer move = null;
+
+		do {
+			move = player.determineMove();
+			valid = go.checkValidity(move);
+		} while (!valid);
+	}
+
+	// srv stuurt bij valid move
+	// PROTOCOL.result + PROTOCOL.delimiter + PROTOCOL.valid + PROTOCOL.delimiter + bord (updated)	
+	// srv stuurt bij invalid move
+	// PROTOCOL.result + PROTOCOL.delimiter + PROTOCOL.invalid + PROTOCOL.delimiter + message (string)
+	public void handleResult() {
+	}
+
+	// game end
+	// PROTOCOL.end + PROTOCOL.delimiter + PROTOCOL.reasonEnd + PROTOCOL.delimiter + winner (als PROTOCOL.W/B) + PROTOCOL.delimiter + scoreBlack (String, parse to integer) + PROTOCOL.delimiter + scoreWhite (String, parse to integer)
+	// andere client stopt:
+	// game end + exit
+	// verbinging verloren:
+	// game end: disconnect
+	public void handleEnd() {
 	}
 
 	public void printMessage(String s) {
@@ -187,7 +236,7 @@ public class Client implements Runnable{
 		in = null;
 		out = null;
 	}
-	
+
 	public void closeConnection() {
 		System.out.println("Closing the connection...");
 		try {
@@ -202,11 +251,6 @@ public class Client implements Runnable{
 	public void setIP(String IP) {
 		this.host = IP;
 	}
-	
-	public String getMove() {
-		String move = player.determineMove();
-		return null;
-	}	
 
 	public static void main (String[] args) {
 		new Thread(new Client()).start();

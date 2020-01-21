@@ -2,10 +2,14 @@ package player;
 
 public class HumanPlayer implements Player{
 
+	private String colour;
+	
+	
+	
 	@Override
-	public String determineMove() {
+	public int determineMove() {
 		// TODO Auto-generated method stub
-		return null;
+		return 0;
 	}
 
 }

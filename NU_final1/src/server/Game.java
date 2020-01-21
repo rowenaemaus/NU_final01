@@ -48,8 +48,8 @@ public class Game implements Runnable {
 			e.printStackTrace();
 		}
 		
-		srv.printMessage("Game over!");
-		srv.endGame(this);
+//		srv.printMessage("Game over!");
+//		srv.endGame(this);
 	}
 
 	public void initializeBoard() {
@@ -59,5 +59,13 @@ public class Game implements Runnable {
 	
 	public String getBoard() {
 		return board;
+	}
+
+	public ClientHandler getc1() {
+		return c1;
+	}
+
+	public ClientHandler getc2() {
+		return c2;
 	}
 }
