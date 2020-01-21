@@ -93,9 +93,7 @@ public class ClientHandler implements Runnable{
 
 
 
-		// TODO handle inkomende commands
-
-
+		// TODO handle inkomende command
 
 	}
 
