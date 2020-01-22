@@ -1,5 +1,7 @@
 package server;
 
+import Protocol.ProtocolMessages;
+
 public class Game implements Runnable {
 
 	public ClientHandler c1 = null;
@@ -7,7 +9,7 @@ public class Game implements Runnable {
 
 	private final int DIMENSION = 5;
 	private String board = null;
-	
+
 	private Server srv;
 
 	/**
@@ -27,36 +29,79 @@ public class Game implements Runnable {
 		c1.setPlaying(true);
 		c2.setPlaying(true);
 	}
-	
+
 	@Override
-	public synchronized void run() {
+	public void run() {
 		srv.printMessage("________________");
-		srv.printMessage("Setting up game board...");
+		srv.printMessage("Setting up game...");
 		initializeBoard();
+
+		Thread t1 = new Thread(c1, String.format("Handler %s", c1.getName()));
+		Thread t2 = new Thread(c2, String.format("Handler %s", c1.getName()));
 		
-		Thread t1 = new Thread(c1);
-		Thread t2 = new Thread(c2);
-		// TODO notify?
 		srv.printMessage("Game starting!");
 		t1.start();
 		t2.start();
-			
+
 		try {
 			this.wait(5000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+		srv.printMessage("Game over!");
+		srv.endGame(this);
+	}
+
+	public void handleCommand(ClientHandler caller, String msg) {
+		srv.printMessage("[" + caller.getName() + "] Incoming: " + msg);
+		Character command = (msg.length() > 0) ? msg.charAt(0) : null;
+		if (command == null) return;
 		
-//		srv.printMessage("Game over!");
-//		srv.endGame(this);
+		if (msg.length() > 1) {	
+			if (!(msg.substring(1,1).equals(ProtocolMessages.DELIMITER))) {
+				srv.printMessage("Invalid command character");
+				return;
+			}
+		}
+
+		switch (command) {
+		case ProtocolMessages.MOVE :
+			handleMove(msg);
+			break;
+		case ProtocolMessages.QUIT :
+			srv.printMessage(String.format("[%s] indicated to quit the game!", caller.getName()));
+			otherPlayer(caller).toClient(String.format("[%s] indicated to quit the game!", caller.getName()));
+			endGame();
+			break;			
+		default :
+			srv.printMessage("Invalid command!");
+			break;
+		}
+	}
+
+	public void handleMove(String msg) {
+		// TODO implement
+		// PROTOCOL.move + PROTOCOL.delimiter + move
+//		otherPlayer(caller).toClient(String.format("> [%s] says: %s", caller.getName(), msg));
+
+	}
+
+	public void endGame() {
+		// TODO implement
+	}
+
+
+	public ClientHandler otherPlayer(ClientHandler c) {
+		return c.equals(c1) ? c2 :c1;
 	}
 
 	public void initializeBoard() {
 		// TODO String board = (ProtocolMessages.Unoccupied).repeat(DIMENSION*DIMENSION);
-		board = "U".repeat(DIMENSION*DIMENSION);
+		//		board = "U".repeat(DIMENSION*DIMENSION);
 	}
-	
+
 	public String getBoard() {
 		return board;
 	}
@@ -68,4 +113,5 @@ public class Game implements Runnable {
 	public ClientHandler getc2() {
 		return c2;
 	}
+
 }

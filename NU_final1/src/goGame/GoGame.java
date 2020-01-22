@@ -9,6 +9,7 @@ public class GoGame implements Runnable {
 	private GoGUIIntegrator g;
 	private int dimension;
 	private Client client;
+	private String colour;
 
 	public GoGame (int dimension, Client client) {
 		this.client = client;
@@ -37,5 +38,27 @@ public class GoGame implements Runnable {
 	@Override
 	public void run() {
 		setUpGUI();		
+	}
+
+	public void newBoard(String string) {
+		// TODO Auto-generated method stub
+	}
+
+	public void setColour(String colour) {
+		// TODO Auto-generated method stub
+	}
+
+	public boolean checkValidity(String move) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public void updateBoard(String board) {
+		// TODO Auto-generated method stub
+		// also show new board	
+	}
+	
+	public void showBoard() {
+		// TODO show updated board as it is
 	}
 }

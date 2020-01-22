@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 
+import Protocol.ProtocolMessages;
+
 public class ClientHandler implements Runnable{
 
 	private boolean connected = false;
@@ -38,8 +40,8 @@ public class ClientHandler implements Runnable{
 
 		try {
 			shakeIt = in.readLine();
-			if (shakeIt.charAt(0) == 'H') {
-				srv.printMessage(String.format("Correct handshake received from client %s!", name));
+			if (shakeIt.charAt(0) == ProtocolMessages.HANDSHAKE) {
+				srv.printMessage(String.format("Correct handshake received from %s!", name));
 				out.write(srv.getHello());
 				out.newLine();
 				out.flush();
@@ -56,14 +58,12 @@ public class ClientHandler implements Runnable{
 	public void run() {
 		srv.printMessage("Handler ready for [" + name + "]");
 		String msg = null;
-
+		srv.printMessage("____________");
+		
 		try {
 			msg = in.readLine();
 			while (msg != null) {
-				srv.printMessage("> [" + name + "] Incoming: " + msg);
-				handleCommand(msg);
-				out.newLine();
-				out.flush();
+				game.handleCommand(this, msg);
 				msg = in.readLine();
 			}
 		} catch (IOException e) {
@@ -72,30 +72,6 @@ public class ClientHandler implements Runnable{
 	}
 
 
-	public void handleCommand(String msg) {
-		// TODO adjust according to protocol
-		String[] messages = msg.split(";");
-
-		char command = msg.charAt(0);
-
-		switch (command) {
-		case 'x':
-			srv.printMessage(String.format("> [%s] indicated to quit! Shutting down this game.", name));
-			shutDown();
-			srv.endGame(this.game);
-			break;
-		case 't':
-			break;
-		default:
-			srv.printMessage("Command hallo doe iets jo");
-			break;
-		}
-
-
-
-		// TODO handle inkomende command
-
-	}
 
 	// continuously listen for quit en hou verbinding in de gaten
 	// verdeel kleur
@@ -119,6 +95,16 @@ public class ClientHandler implements Runnable{
 	// close();
 	// shutdown(); (evt niet).
 
+	public void toClient(String s) {
+		try {
+			out.write(s);
+			out.newLine();
+			out.flush();
+		} catch (IOException e) {
+			System.out.println(e);
+			e.printStackTrace();
+		}
+	}
 
 	public String getName() {
 		return name;

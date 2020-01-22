@@ -7,10 +7,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
+import Protocol.ProtocolMessages;
 import exceptions.MaxGamesException;
 import exceptions.NoOpponentException;
 
@@ -36,12 +34,16 @@ public class Server implements Runnable {
 	private static String serverName = "ServeRowena";
 	private String IPAddress;
 	
+	private final String protocolVersion;
+	
 	public Server () {
 		handlers = new ArrayList<>();
 		games = new ArrayList<>();
 		nextClientNo = 1;
 		maxGames = 1;
-		maxHandlers = 2 * maxGames;		
+		maxHandlers = 2 * maxGames;	
+		
+		protocolVersion = "1.0";
 	}
 
 	@Override
@@ -75,7 +77,6 @@ public class Server implements Runnable {
 					}
 				}
 			} catch (Exception e1) {
-				System.out.println("server flag1");
 				System.out.println(e1);
 				e1.printStackTrace();
 				openNewSocket = false;
@@ -157,11 +158,10 @@ public class Server implements Runnable {
 		return 0;
 	}
 
-	public char getHello() {
-		// TODO	return de string van hello handshake volgens protocol 
-		return 'H';
+	public String getHello() {
+		// PROTOCOL.handshake + PROTOCOL.delimiter + finalVersion (string)
+		return (ProtocolMessages.HANDSHAKE + ProtocolMessages.DELIMITER + protocolVersion);
 	}
-
 
 	// _________________ MAIN _______________________________
 
