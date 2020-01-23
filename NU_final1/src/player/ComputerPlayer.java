@@ -8,7 +8,6 @@ public class ComputerPlayer implements Player {
 		return "computer player";
 	}
 
-	@Override
 	public String getInput() {
 		// TODO Auto-generated method stub
 		return null;

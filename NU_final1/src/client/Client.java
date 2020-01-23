@@ -23,25 +23,28 @@ public class Client implements Runnable{
 	private BufferedReader in;
 	private BufferedWriter out;
 
-	private Player player;
-	private GoGame go;
+	private PlayerHandler handler;
 	private final String protocolVersion;
 	private String name;
 
 	private boolean connected;
-	private boolean colourSet;
+	private boolean playing;
 
 	public Client() {
 		host = "10.7.16.57";
 		port = 8070;
 		socket = null;
 		connected = false;
-		colourSet = false;
-		player = new HumanPlayer();
 		protocolVersion = "1.0";
 		name = "Rowena";
+		handler = new PlayerHandler(this);
+		playing = false;
 	}
 
+	/**
+	 * Checks the handshake and handles the game communication with 
+	 * the server side as long as it lasts.
+	 */
 	@Override
 	public void run() {
 		try {
@@ -65,6 +68,7 @@ public class Client implements Runnable{
 			e.printStackTrace();
 		}
 
+		setPlaying(true);
 		//		printMessage("Setting up GO game handler.");
 		//		go = new GoGame(10, this);
 		//		System.out.println("client.java flag1");
@@ -88,13 +92,17 @@ public class Client implements Runnable{
 		}
 	}
 
+	/**
+	 * 
+	 * @param msg
+	 */
 	public void handleCommand(String msg) {
-		try {
-			sendMessage(player.getInput());
-		} catch (ServerUnavailableException e) {
-			System.out.println(e);
-			e.printStackTrace();
-		}
+//		try {
+//			sendMessage(player.getInput());
+//		} catch (ServerUnavailableException e) {
+//			System.out.println(e);
+//			e.printStackTrace();
+//		}
 
 		Character command = (msg.length() > 0) ? msg.charAt(0) : null;
 		if (command == null) return;
@@ -108,90 +116,20 @@ public class Client implements Runnable{
 
 		switch(command) { 
 		case ProtocolMessages.GAME :
-			startGame(msg);
+			handler.startGame(msg);
 			break;
 		case ProtocolMessages.TURN :
-			doTurn(msg);
+			handler.doTurn(msg);
 			break;
 		case ProtocolMessages.RESULT :
-			handleResult(msg);
+			handler.handleResult(msg);
 			break;
 		case ProtocolMessages.END :
-			handleEnd(msg);
+			handler.handleEnd(msg);
 			break;
 		default:
 			printMessage("Incoming message: \'msg\'");
 		}
-	}
-	
-	public void startGame(String msg) {
-		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
-		String board = cmds.length > 1 ? cmds[1] : null;
-		String colour = cmds.length > 2 ? cmds[2] : null;
-
-		if (board == null || colour == null) {
-			printMessage("ERROR: Invalid colour and board arguments!");
-		} else {
-			go.newBoard(board);
-			go.setColour(colour);
-			player.setColour(colour);
-		}
-	}
-
-	public void doTurn(String msg) {
-		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
-		String board = cmds.length > 1 ? cmds[1] : null;
-		
-		if (board == null) {
-			printMessage("ERROR: Invalid board arguments!");
-			return;
-		}
-		
-		boolean valid = false;
-		String move = null;
-
-		do {
-			printMessage(String.format("%s, please determine a move!", name));
-			move = player.determineMove();
-			valid = go.checkValidity(move);
-			printMessage("Move valid: " + valid);
-		} while (!valid);
-
-		try {
-			sendMessage(ProtocolMessages.MOVE + ProtocolMessages.DELIMITER + move.toString());
-		} catch (ServerUnavailableException e) {
-			System.out.println(e);
-			e.printStackTrace();
-		}
-	}
-
-	public void handleResult(String msg) {
-		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
-		String valid = cmds.length > 1 ? cmds[1] : null;
-		String board = cmds.length > 2 ? cmds[2] : null;
-		
-		if (valid == null || board == null) {
-			printMessage("ERROR: Invalid result message received from server!");
-			return;
-		}
-		
-		if (valid.equals(Character.toString(ProtocolMessages.VALID))) {
-			printMessage("Server approved your move.");
-			go.updateBoard(board);	
-		} else if (valid.equals(Character.toString(ProtocolMessages.INVALID))){
-			printMessage("Server disapproves your move, very disappointing.");
-		}	
-	}
-
-	// game end
-	// PROTOCOL.end + PROTOCOL.delimiter + PROTOCOL.reasonEnd + PROTOCOL.delimiter + winner (als PROTOCOL.W/B) + PROTOCOL.delimiter + scoreBlack (String, parse to integer) + PROTOCOL.delimiter + scoreWhite (String, parse to integer)
-	// andere client stopt:
-	// game end + exit
-	// verbinging verloren:
-	// game end: disconnect
-	public void handleEnd(String msg) {
-		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
-		
 	}
 
 	public void printMessage(String s) {
@@ -213,7 +151,7 @@ public class Client implements Runnable{
 
 	}
 
-
+/*--------------------------------------------*/
 	/* Connection methods */
 
 	public boolean createConnection() {
@@ -285,6 +223,17 @@ public class Client implements Runnable{
 
 
 	/* Getters setters */
+	public boolean getPlaying() {
+		return this.playing;
+	}
+	
+	public void setPlaying(boolean playing) {
+		this.playing = playing;
+	}
+	
+	public String getName() {
+		return this.name;
+	}
 
 	public void setIP(String IP) {
 		this.host = IP;

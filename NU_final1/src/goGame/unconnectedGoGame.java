@@ -6,22 +6,18 @@ import java.util.Set;
 import com.nedap.go.gui.GoGUIIntegrator;
 
 import Protocol.ProtocolMessages;
-import client.Client;
-import client.PlayerHandler;
 import exceptions.InvalidColourException;
 
-public class GoGame implements Runnable {
+public class unconnectedGoGame implements Runnable {
 
 	private GoGUIIntegrator g;
-	private PlayerHandler handler;
 	private int dimension;
 	private boolean colour = false; // true = white
 	private Set<String> prevBoards = new HashSet<String>();
 	private String currentBoard;
 
-	public GoGame (int dimension, PlayerHandler handler) {
+	public unconnectedGoGame (int dimension) {
 		this.dimension = dimension;
-		this.handler = handler;
 		try {
 			setColour("black");
 		} catch (InvalidColourException e) {
@@ -37,7 +33,7 @@ public class GoGame implements Runnable {
 	}
 
 	public void run() {
-
+		
 	}
 
 	public void newBoard(String board) {
@@ -153,62 +149,3 @@ public class GoGame implements Runnable {
 		new Thread(new unconnectedGoGame(10)).start();;
 	}
 }
-
-//	
-//	
-//	
-//	
-//	private GoGUIIntegrator g;
-//	private int dimension;
-//	private Client client;
-//	private String colour;
-//
-//	public GoGame (int dimension, Client client) {
-//		this.client = client;
-//		this.dimension = dimension;
-//		client.printMessage("Go game handler set up. Preparing GUI...");
-//	}
-//
-//	public void setUpGUI() {
-//		g = new GoGUIIntegrator(true, true, dimension);
-//		System.out.println("flag2");
-//		g.startGUI();
-//		System.out.println("flag5");
-//		g.setBoardSize(dimension);
-//		System.out.println("flag6");
-//		client.printMessage("GUI ready");
-//		client.printMessage("-----------------------");
-//	}
-//
-//	public boolean checkValidity(int move) {
-//		// TODO implement
-//		return false;
-//	}
-//
-//	@Override
-//	public void run() {
-//		setUpGUI();		
-//	}
-//
-//	public void newBoard(String string) {
-//		// TODO Auto-generated method stub
-//	}
-//
-//	public void setColour(String colour) {
-//		// TODO Auto-generated method stub
-//	}
-//
-//	public boolean checkValidity(String move) {
-//		// TODO Auto-generated method stub
-//		return false;
-//	}
-//
-//	public void updateBoard(String board) {
-//		// TODO Auto-generated method stub
-//		// also show new board	
-//	}
-//	
-//	public void showBoard() {
-//		// TODO show updated board as it is
-//	}
-//}

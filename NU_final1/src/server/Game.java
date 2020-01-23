@@ -7,7 +7,6 @@ public class Game implements Runnable {
 	public ClientHandler c1 = null;
 	public ClientHandler c2 = null;
 
-	private final int DIMENSION = 5;
 	private String board = null;
 
 	private Server srv;

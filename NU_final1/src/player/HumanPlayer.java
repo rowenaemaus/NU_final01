@@ -1,7 +1,5 @@
 package player;
 
-import java.util.Scanner;
-
 public class HumanPlayer implements Player{
 
 	private String colour;
@@ -13,7 +11,6 @@ public class HumanPlayer implements Player{
 
 
 
-	@Override
 	public String getInput() {
 //		Scanner keyboard = new Scanner(System.in);
 //		System.out.println("Give input pls");
