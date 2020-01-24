@@ -1,5 +1,7 @@
 package player;
 
+import java.util.Scanner;
+
 public class HumanPlayer implements Player{
 
 	private String colour;
@@ -9,24 +11,21 @@ public class HumanPlayer implements Player{
 		return "player human";
 	}
 
-
-
-	public String getInput() {
-//		Scanner keyboard = new Scanner(System.in);
-//		System.out.println("Give input pls");
-//		return keyboard.next();
-		return "Q";
-	}
-
-
-
 	@Override
-	public String determineMove() {
-		// TODO Auto-generated method stub
-		return null;
+	public int determineMove() {
+		Scanner keyboard = new Scanner(System.in);
+		String answer = keyboard.nextLine();
+		int move = -1;
+			
+		try {
+			move = Integer.valueOf(answer);
+		} catch (NumberFormatException e) {
+			System.out.println("ERROR: Invalid number provided for move!");
+			e.printStackTrace();
+		}
+		
+		return move;
 	}
-
-
 
 	@Override
 	public void setColour(String string) {

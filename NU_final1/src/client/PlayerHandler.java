@@ -7,7 +7,7 @@ import goGame.GoGame;
 import player.HumanPlayer;
 import player.Player;
 
-public class PlayerHandler implements Runnable {
+public class PlayerHandler {
 
 	private Client client;
 	private Player player;
@@ -19,35 +19,29 @@ public class PlayerHandler implements Runnable {
 		this.client = client;
 		colour = false;
 		player = new HumanPlayer();
+		playerName = player.getName();
 	}
 
-	@Override
-	public void run() {
-		playerName = player.getName();
-
-		while(client.getPlaying()) {
-			boolean validMove = false;
-			while(!validMove) {
-				toPlayer("Please enter a move: ");
-				String move = player.determineMove();
-				validMove = go.checkValidity(move); 
-			}
-		}
-
-		// TODO Auto-generated method stub
-
-	}	
-
+	/**
+	 * Starts the game, setting the colour for this player and initialising
+	 * the board and GUI
+	 * 
+	 * @param msg
+	 */
 	public void startGame(String msg) {
 		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
 		String board = cmds.length > 1 ? cmds[1] : null;
 		String colour = cmds.length > 2 ? cmds[2] : null;
-
+		System.out.println(msg);
+		System.out.println(board);
+		System.out.println(cmds);
+		
 		try {
 			if (board == null || colour == null) {
 				client.printMessage("ERROR: Invalid colour and board arguments!");
 			} else {
-				go = new GoGame((int) Math.sqrt(board.length()), this);
+				System.out.println("flag1");
+				go = new GoGame((int) Math.sqrt(board.length()),false);
 				go.newBoard(board);
 				go.setColour(colour);
 				player.setColour(colour);
@@ -58,6 +52,11 @@ public class PlayerHandler implements Runnable {
 		}
 	}
 
+	/**
+	 * Asks the player for a move to be returned to the server. A move will be asked
+	 * until the user provides a valid move.
+	 * @param msg The message received from the server containing the current board.
+	 */
 	public void doTurn(String msg) {
 		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
 		String board = cmds.length > 1 ? cmds[1] : null;
@@ -65,10 +64,13 @@ public class PlayerHandler implements Runnable {
 		if (board == null) {
 			client.printMessage("ERROR: Invalid board arguments!");
 			return;
+		} else {
+			System.out.println("board is: " + board);
+			go.updateBoard(board);
 		}
 
 		boolean valid = false;
-		String move = null;
+		int move = -1;
 
 		do {
 			client.printMessage(String.format("%s, please determine a move!", client.getName()));
@@ -76,15 +78,21 @@ public class PlayerHandler implements Runnable {
 			valid = go.checkValidity(move);
 			client.printMessage("Move valid: " + valid);
 		} while (!valid);
-
+		
+		go.setStone(move);
 		try {
-			client.sendMessage(ProtocolMessages.MOVE + ProtocolMessages.DELIMITER + move.toString());
+			client.sendMessage(ProtocolMessages.MOVE + ProtocolMessages.DELIMITER + move);
 		} catch (ServerUnavailableException e) {
 			System.out.println(e);
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * Processes the feedback from the server about the previous move; whether the 
+	 * move was valid and the updated board after the move. 
+	 * @param msg The message received from the server containing 'valid' and the board.
+	 */
 	public void handleResult(String msg) {
 		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
 		String valid = cmds.length > 1 ? cmds[1] : null;
@@ -103,19 +111,14 @@ public class PlayerHandler implements Runnable {
 		}	
 	}
 
-	// game end
-	// PROTOCOL.end + PROTOCOL.delimiter + PROTOCOL.reasonEnd + PROTOCOL.delimiter + winner (als PROTOCOL.W/B) + PROTOCOL.delimiter + scoreBlack (String, parse to integer) + PROTOCOL.delimiter + scoreWhite (String, parse to integer)
-	// andere client stopt:
-	// game end + exit
-	// verbinging verloren:
-	// game end: disconnect
+	/**
+	 * Ends the game. The message can indicate the reason of quitting, as well as the scores.
+	 * 	PROTOCOL.end + PROTOCOL.delimiter + PROTOCOL.reasonEnd + PROTOCOL.delimiter + winner (PROTOCOL.W/B) + PROTOCOL.delimiter + scoreBlack + PROTOCOL.delimiter + scoreWhite
+	 * @param msg
+	 */
 	public void handleEnd(String msg) {
-		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
-
-	}
-
-	public void toPlayer(String s) {
-		System.out.println(s);
+		client.printMessage("Game ended!");
+		client.closeConnection();
 	}
 
 
@@ -123,5 +126,11 @@ public class PlayerHandler implements Runnable {
 		return this.client;
 	}
 
-
+	public static void main (String[] args) {
+		PlayerHandler p = new PlayerHandler(new Client());
+		p.startGame("S;UUUUUUUUU;black");
+		p.doTurn("T;UUUUUWUUU");
+		
+	}
+	
 }

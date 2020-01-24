@@ -6,9 +6,11 @@ import java.util.Set;
 import com.nedap.go.gui.GoGUIIntegrator;
 
 import Protocol.ProtocolMessages;
+import client.Client;
+import client.PlayerHandler;
 import exceptions.InvalidColourException;
 
-public class unconnectedGoGame implements Runnable {
+public class unconnectedGoGame {
 
 	private GoGUIIntegrator g;
 	private int dimension;
@@ -21,19 +23,15 @@ public class unconnectedGoGame implements Runnable {
 		try {
 			setColour("black");
 		} catch (InvalidColourException e) {
-			// TODO Auto-generated catch block
+			System.out.println(e);
 			e.printStackTrace();
 		}
 	}
 
 	public void setUpGUI() {
 		g = new GoGUIIntegrator(true, true, dimension);
-		g.startGUI();
+//		g.startGUI();
 		g.setBoardSize(dimension);
-	}
-
-	public void run() {
-		
 	}
 
 	public void newBoard(String board) {
@@ -64,7 +62,7 @@ public class unconnectedGoGame implements Runnable {
 
 		if(isField(nextMove)) {
 			String boardAfterMove = deepCopy();
-			boardAfterMove = setStone(getRow(nextMove), getColumn(nextMove));
+			boardAfterMove = setStone(nextMove);
 			return prevBoards.contains(boardAfterMove) ? false : true;
 		} else {
 			System.out.println("ERROR: Impossible move!");
@@ -72,58 +70,42 @@ public class unconnectedGoGame implements Runnable {
 		}
 	}
 
-	public boolean previousBoard(String board) {
-		return prevBoards.contains(board);
-	}
-
 	public String deepCopy() {
 		String board = new String(currentBoard);
-		return currentBoard;
+		return board;
 	}
 
-	public int index(int row, int col) {
-		return row*dimension + col;
-	}
+//	public int index(int row, int col) {
+//		return row*dimension + col;
+//	}
 
-	public int getRow(int move) {
-		return (int) Math.floor(move/dimension);
-	}
-
-	public int getColumn(int move) {
-		return move % dimension;
-	}
+//	public int getRow(int move) {
+//		return (int) Math.floor(move/dimension);
+//	}
+//
+//	public int getColumn(int move) {
+//		return move % dimension;
+//	}
 
 	public boolean isField(int index) {
 		return index >= 0 && index < currentBoard.length();
-	}
-
-	public boolean isField(int row, int col) {
-		return isField(index(row, col));
 	}
 
 	public char getField(int i) {
 		return currentBoard.charAt(i);
 	}
 
-	public char getField(int row, int col) {
-		return getField(index(row, col));
-	}
-
 	public boolean isEmptyField(int i) {
 		return currentBoard.charAt(i) == ProtocolMessages.UNOCCUPIED;
-	}
-
-	public boolean isEmptyField(int row, int col) {
-		return isEmptyField(index(row,col));
 	}
 
 	public void reset() {
 		currentBoard = Character.toString(ProtocolMessages.UNOCCUPIED).repeat(dimension*dimension);
 	}
 
-	public String setStone(int x, int y) {
+	public String setStone(int move) {
 		StringBuilder updatedBoard = new StringBuilder(currentBoard);
-		updatedBoard.setCharAt(index(x,y), getColourChar());
+		updatedBoard.setCharAt(move, getColourChar());
 		return updatedBoard.toString();
 	}
 
@@ -146,6 +128,65 @@ public class unconnectedGoGame implements Runnable {
 
 
 	public static void main (String[] args) {
-		new Thread(new unconnectedGoGame(10)).start();;
+		GoGame g = new GoGame(10, false);;
 	}
 }
+
+//	
+//	
+//	
+//	
+//	private GoGUIIntegrator g;
+//	private int dimension;
+//	private Client client;
+//	private String colour;
+//
+//	public GoGame (int dimension, Client client) {
+//		this.client = client;
+//		this.dimension = dimension;
+//		client.printMessage("Go game handler set up. Preparing GUI...");
+//	}
+//
+//	public void setUpGUI() {
+//		g = new GoGUIIntegrator(true, true, dimension);
+//		System.out.println("flag2");
+//		g.startGUI();
+//		System.out.println("flag5");
+//		g.setBoardSize(dimension);
+//		System.out.println("flag6");
+//		client.printMessage("GUI ready");
+//		client.printMessage("-----------------------");
+//	}
+//
+//	public boolean checkValidity(int move) {
+//		// TODO implement
+//		return false;
+//	}
+//
+//	@Override
+//	public void run() {
+//		setUpGUI();		
+//	}
+//
+//	public void newBoard(String string) {
+//		// TODO Auto-generated method stub
+//	}
+//
+//	public void setColour(String colour) {
+//		// TODO Auto-generated method stub
+//	}
+//
+//	public boolean checkValidity(String move) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+//
+//	public void updateBoard(String board) {
+//		// TODO Auto-generated method stub
+//		// also show new board	
+//	}
+//	
+//	public void showBoard() {
+//		// TODO show updated board as it is
+//	}
+//}

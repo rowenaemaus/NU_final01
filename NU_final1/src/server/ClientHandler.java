@@ -72,30 +72,14 @@ public class ClientHandler implements Runnable{
 	}
 
 
-
-	// continuously listen for quit en hou verbinding in de gaten
-	// verdeel kleur
-	// stuur een start signaal en wie welke kleur
-
-	// loop hierover:
-	// handle timeout
 	// stuur turn en luister exclusief naar diegene
 
 	// check validity
 	// if niet valid ga naar end
 	// als wel valid dan zet de move op bord
-	// connect met game wat je wil doen
-	// stuur de nieuwe info naar beiden.
-	// return naar begin loop
 
 
-	// wanneer wel quit of verbinding weg
-
-	// endGame();
-	// close();
-	// shutdown(); (evt niet).
-
-	public void toClient(String s) {
+	public void sendToClient(String s) {
 		try {
 			out.write(s);
 			out.newLine();

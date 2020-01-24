@@ -31,13 +31,11 @@ public class Client implements Runnable{
 	private boolean playing;
 
 	public Client() {
-		host = "10.7.16.57";
 		port = 8070;
 		socket = null;
 		connected = false;
 		protocolVersion = "1.0";
 		name = "Rowena";
-		handler = new PlayerHandler(this);
 		playing = false;
 	}
 
@@ -62,25 +60,22 @@ public class Client implements Runnable{
 			e.printStackTrace();
 		}
 
-		try {
-			sendMessage("Hi van de client groetjes");
-		} catch (ServerUnavailableException e) {
-			e.printStackTrace();
-		}
-
+		handler = new PlayerHandler(this);
+		
+//		try {
+//			sendMessage("Q;");
+//		} catch (ServerUnavailableException e) {
+//			e.printStackTrace();
+//		}
+		
 		setPlaying(true);
-		//		printMessage("Setting up GO game handler.");
-		//		go = new GoGame(10, this);
-		//		System.out.println("client.java flag1");
-		//		new Thread(go).start();
-		//		System.out.println("client flag2");
-		//		player = new HumanPlayer();
+		printMessage(name + " starting the game");
 
 		String msg = null;
 		try {
 			msg = in.readLine();
 			while (msg != null) {
-				printMessage(String.format("Incoming message: \'%s\'", msg));
+				printMessage(String.format("Incoming server-message: \'%s\'", msg));
 				handleCommand(msg);
 				out.newLine();
 				out.flush();
@@ -93,26 +88,13 @@ public class Client implements Runnable{
 	}
 
 	/**
-	 * 
-	 * @param msg
+	 * Handles the commands coming from the server side and forwards the message 
+	 * to the right method depending on the command
+	 * @param msg The message coming from the server-side
 	 */
 	public void handleCommand(String msg) {
-//		try {
-//			sendMessage(player.getInput());
-//		} catch (ServerUnavailableException e) {
-//			System.out.println(e);
-//			e.printStackTrace();
-//		}
-
 		Character command = (msg.length() > 0) ? msg.charAt(0) : null;
 		if (command == null) return;
-
-		if (msg.length() > 1) {	
-			if (!(msg.substring(1,1).equals(ProtocolMessages.DELIMITER))) {
-				printMessage("Invalid command character");
-				return;
-			}
-		}
 
 		switch(command) { 
 		case ProtocolMessages.GAME :
@@ -128,7 +110,7 @@ public class Client implements Runnable{
 			handler.handleEnd(msg);
 			break;
 		default:
-			printMessage("Incoming message: \'msg\'");
+//			printMessage(String.format("Incoming message from server: \'%s\'", msg));
 		}
 	}
 
@@ -136,6 +118,11 @@ public class Client implements Runnable{
 		System.out.println(s);
 	}
 
+	/**
+	 * Sends a message to the server side over the outputstream
+	 * @param msg The message to be sent over the stream
+	 * @throws ServerUnavailableException
+	 */
 	public void sendMessage(String msg) throws ServerUnavailableException {
 		if (out != null) {
 			try {
@@ -159,7 +146,7 @@ public class Client implements Runnable{
 
 		while (socket == null) {
 			try { 
-				InetAddress addr = InetAddress.getByName(host);
+				InetAddress addr = InetAddress.getLocalHost();
 				printMessage(String.format("Attempting to connect to port %d on %s", port, host));
 				socket = new Socket(addr, port);
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));

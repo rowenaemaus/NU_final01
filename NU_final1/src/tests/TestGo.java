@@ -13,9 +13,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import client.Client;
+import client.PlayerHandler;
 import exceptions.HandShakeException;
+import goGame.GoGame;
+import server.Game;
 
-class TestClient {
+class TestGo {
 	private final static ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 	private final static PrintStream originalOut = System.out;
 
@@ -45,6 +48,15 @@ class TestClient {
 		
 		
 		
+		PlayerHandler p = new PlayerHandler(new Client());
+		p.startGame("S;UUUUUUUUU;black");
+
+
+		GoGame g = new GoGame(10, false);
+//		
+//		c1.sendToClient("S;UUUUUUUUU;black");
+//		c2.sendToClient("S;UUUUUUUUU;white");
+//		c1.sendToClient("T;UUUUUUUUU");
 //		
 //		
 //		client.createConnection();
