@@ -6,8 +6,6 @@ import java.util.Set;
 import com.nedap.go.gui.GoGUIIntegrator;
 
 import Protocol.ProtocolMessages;
-import client.Client;
-import client.PlayerHandler;
 import exceptions.InvalidColourException;
 
 public class GoGame {
@@ -22,12 +20,6 @@ public class GoGame {
 	public GoGame (int dimension, boolean useGUI) {
 		this.dimension = dimension;
 		this.useGUI = useGUI;
-		try {
-			setColour("black");
-		} catch (InvalidColourException e) {
-			System.out.println(e);
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -51,17 +43,25 @@ public class GoGame {
 
 	/**
 	 * Sets the colour for this game representation
-	 * @param colour The colour to be set ("black"/"white")
+	 * @param colour The colour to be set ("white"/"black"; true/false respectively)
 	 * @throws InvalidColourException
 	 */
 	public void setColour(String colour) throws InvalidColourException {
-		if (colour.equalsIgnoreCase("white")) 
+		if (colour.equalsIgnoreCase(Character.toString(ProtocolMessages.WHITE))) 
 			this.colour = true;
-		else if (colour.equalsIgnoreCase("black")) {
+		else if (colour.equalsIgnoreCase(Character.toString(ProtocolMessages.BLACK))) {
 			this.colour = false;
 		} else {
 			throw new InvalidColourException("ERROR: No valid colour provided to player!");
 		}
+	}
+
+	/**
+	 * Sets the colour for this game representation
+	 * @param colour The colour to be set (white/black; true/false respectively)
+	 */
+	public void setColour(boolean colour) {
+		this.colour = colour;
 	}
 
 	/**
@@ -81,7 +81,7 @@ public class GoGame {
 		}
 	}
 
-	/**
+	/*
 	 * Sets a stone at the desired spot
 	 * @param move The one-dimensional index to put the stone
 	 * @return Returns the resulting board after the move has taken place
@@ -104,43 +104,58 @@ public class GoGame {
 			char curChar = boardChar[i];
 			if (curChar == ProtocolMessages.BLACK || curChar == ProtocolMessages.WHITE) {
 				boolean colour = boardChar[i] == ProtocolMessages.BLACK ? false : true;
-				System.out.println("row, column: " + getRow(i) + getColumn(i));
 				g.addStone(getRow(i), getColumn(i), colour);
 			}
 		}
 	}
 
+	/**
+	 * Copies the board to a new String instance
+	 * @return board A copy of the current board
+	 */
 	public String deepCopy() {
 		String board = new String(currentBoard);
 		return board;
 	}
 
+	/**
+	 * Returns the 2-dimensional column of 1 a given 1-dimensional index
+	 * @param move A 1-dimensional index of the preferred move
+	 * @return The 2-dimensional index column
+	 */
 	public int getColumn(int move) {
 		return (int) Math.floor(move/dimension);
 	}
 
+	/**
+	 * Returns the 2-dimensional row of a given 1-dimensional index
+	 * @param move A 1-dimensional index of the preferred move
+	 * @return The 2-dimensional index row
+	 */
 	public int getRow(int move) {
 		return move % dimension;
 	}
 
+	/**
+	 * Returns the mark at a requested index
+	 * @param i Index of which the colour stone is requested
+	 * @return 
+	 */
+	public char getField(int i) {
+		return currentBoard.charAt(i);
+	}
+	
+	/**
+	 * Checks whether the provided index is indeed a valid field at the board
+	 * @param index A 1-dimensional index of a move
+	 * @return true if the index is a valid index of the board
+	 */
 	public boolean isField(int index) {
 		return index >= 0 && index < currentBoard.length();
 	}
 
-	public char getField(int i) {
-		return currentBoard.charAt(i);
-	}
-
-	public boolean isEmpty(int i) {
-		return currentBoard.charAt(i) == ProtocolMessages.UNOCCUPIED;
-	}
-
 	public void reset() {
 		currentBoard = Character.toString(ProtocolMessages.UNOCCUPIED).repeat(dimension*dimension);
-	}
-
-	public char getColourChar() {
-		return (colour) ? ProtocolMessages.WHITE : ProtocolMessages.BLACK;
 	}
 
 	public void updateBoard(String board) {
@@ -148,12 +163,26 @@ public class GoGame {
 		if (useGUI) {boardToGUI(board);}
 	}
 
-	public boolean emptySpot(int move) {
-		return currentBoard.charAt(move) == ProtocolMessages.UNOCCUPIED ? true : false; 
+	public boolean isEmpty(int i) {
+		return currentBoard.charAt(i) == ProtocolMessages.UNOCCUPIED;
 	}
 
+	public char getColourChar() {
+		return (colour) ? ProtocolMessages.WHITE : ProtocolMessages.BLACK;
+	}
 
+	public String getBoard() {
+		return this.currentBoard;
+	}
+	
+	public GoGUIIntegrator getGUI() {
+		return this.g;
+	}
+
+	public int getDimension(){
+		return this.dimension;
+	}
 	public static void main (String[] args) {
-		
+
 	}
 }

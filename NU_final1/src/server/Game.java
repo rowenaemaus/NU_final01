@@ -1,6 +1,11 @@
 package server;
 
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import Protocol.ProtocolMessages;
+import exceptions.InvalidColourException;
 import goGame.GoGame;
 
 public class Game implements Runnable {
@@ -10,15 +15,13 @@ public class Game implements Runnable {
 
 	private GoGame g;
 	private int boardDimension = 10; 
-
 	private Server srv;
-	
 	private ClientHandler turn;
 
 	public Game() {
-		
+
 	}
-	
+
 	/**
 	 * Setting up a new game, with two provided clienthandlers (so one handler per client)
 	 * These handlers are now coupled to this game, and their status 'playing' is set to 
@@ -35,6 +38,14 @@ public class Game implements Runnable {
 		c2.setGame(this);
 		c1.setPlaying(true);
 		c2.setPlaying(true);
+
+		try {
+			c1.setColour(ProtocolMessages.BLACK);
+			c2.setColour(ProtocolMessages.WHITE);
+		} catch (InvalidColourException e) {
+			System.out.println(e);
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -53,15 +64,11 @@ public class Game implements Runnable {
 		srv.printMessage("Game starting!");
 		t1.start();
 		t2.start();
-		
-		c1.sendToClient("G;UUUUUUUUU;black");
-		c2.sendToClient("G;UUUUUUUUU;white");
-		c1.sendToClient("T;UUUUUUUUU");
-		// TODO stuur start game naar beide clients
+
+		sendStart();
+
 		this.turn = c1;
-		// doe magic van turn
-		this.turn = otherPlayer(turn);
-		// TODO om en om een beurt sturen en die verwerken
+		doTurn(turn);
 	}
 
 	/**
@@ -70,8 +77,17 @@ public class Game implements Runnable {
 	public void setUpGame() {
 		g = new GoGame(boardDimension, true);
 		g.newBoard(Character.toString(ProtocolMessages.UNOCCUPIED).repeat(boardDimension*boardDimension));
+	}	
+
+	/**
+	 * Handles the turn for 1 clienthandler, and waits for a response
+	 * @param caller
+	 */
+	public synchronized void doTurn(ClientHandler caller) {
+		g.setColour(caller.getColour());
+		srv.printMessage(String.format("[%s] their turn.", turn.getName()));
+		caller.sendToClient(ProtocolMessages.TURN+ProtocolMessages.DELIMITER+g.getBoard());
 	}
-	
 
 	/**
 	 * Handles the incoming commands from the client and passes it according to the 
@@ -89,8 +105,12 @@ public class Game implements Runnable {
 
 		switch (command) {
 		case ProtocolMessages.MOVE :
-			srv.printMessage("[" + caller.getName() + "] making a move");
-			handleMove(caller, msg);
+			if (caller.equals(turn)) {
+				srv.printMessage("[" + caller.getName() + "] making a move");
+				handleMove(caller, msg);
+				this.turn = otherPlayer(caller);
+				doTurn(turn);
+			}
 			break;
 		case ProtocolMessages.QUIT :
 			srv.printMessage(String.format("[%s] indicated to quit the game!", caller.getName()));
@@ -110,29 +130,33 @@ public class Game implements Runnable {
 	public void handleMove(ClientHandler caller, String msg) {
 		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
 		String move = cmds.length > 1 ? cmds[1] : null;
-		
+
 		if (move == null) {
 			srv.printMessage("Not possible to read move!");
-			caller.sendToClient("Not able to read move!");
+			caller.sendToClient("Not able to read your move!");
 			return;
 		}
-		
+
 		int moveInt = Integer.parseInt(move);
-		
 		boolean valid = g.checkValidity(moveInt);
-		
+
 		if (!valid) {
-			// TODO protocol proof maken
 			caller.sendToClient(ProtocolMessages.END + ProtocolMessages.DELIMITER + "Sorry, invalid move, you lose!");
 			otherPlayer(caller).sendToClient(ProtocolMessages.END + ProtocolMessages.DELIMITER + "Sorry, the other player did an invalid move, you win!");
 			endGame();
 			srv.endGame(this);
 		} else {
-			//beeindigen
+			g.setStone(moveInt);
+			this.turn = otherPlayer(turn);
 		}
-		
-		//		otherPlayer(caller).toClient(String.format("> [%s] says: %s", caller.getName(), msg));
 
+		otherPlayer(caller).sendToClient(String.format("> [%s] says: %s", caller.getName(), msg));
+
+	}
+
+	public void sendStart() {
+		c1.sendToClient(ProtocolMessages.GAME+ProtocolMessages.DELIMITER+g.getBoard()+ProtocolMessages.DELIMITER+ProtocolMessages.BLACK);
+		c2.sendToClient(ProtocolMessages.GAME+ProtocolMessages.DELIMITER+g.getBoard()+ProtocolMessages.DELIMITER+ProtocolMessages.WHITE);
 	}
 
 	/**
@@ -159,6 +183,6 @@ public class Game implements Runnable {
 		Game game = new Game();
 		game.setUpGame();
 	}
-	
-	
+
+
 }

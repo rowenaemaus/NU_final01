@@ -133,8 +133,7 @@ public class Server implements Runnable {
 			return;
 		}
 		if (games.size() < maxGames) {
-			printMessage("Max number of games not reached, starting a new battle.");
-			// TODO notify de spelers ook met een sendMessage ofzo
+			printMessage("Max number of games not reached, take-off:");
 			Game g = new Game(c1, opponent, this);
 			games.add(g);
 			new Thread(g).start();
@@ -159,7 +158,6 @@ public class Server implements Runnable {
 	}
 
 	public String getHello() {
-		// PROTOCOL.handshake + PROTOCOL.delimiter + finalVersion (string)
 		return (ProtocolMessages.HANDSHAKE + ProtocolMessages.DELIMITER + protocolVersion);
 	}
 

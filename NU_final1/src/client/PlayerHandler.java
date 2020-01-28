@@ -17,7 +17,7 @@ public class PlayerHandler {
 
 	public PlayerHandler(Client client) {
 		this.client = client;
-		colour = false;
+//		colour = false;
 		player = new HumanPlayer();
 		playerName = player.getName();
 	}
@@ -32,18 +32,15 @@ public class PlayerHandler {
 		String[] cmds = msg.split(ProtocolMessages.DELIMITER);
 		String board = cmds.length > 1 ? cmds[1] : null;
 		String colour = cmds.length > 2 ? cmds[2] : null;
-		System.out.println(msg);
-		System.out.println(board);
-		System.out.println(cmds);
-		
+
 		try {
 			if (board == null || colour == null) {
 				client.printMessage("ERROR: Invalid colour and board arguments!");
-			} else {
-				System.out.println("flag1");
+			} else { 
 				go = new GoGame((int) Math.sqrt(board.length()),false);
 				go.newBoard(board);
 				go.setColour(colour);
+				setColour(colour);
 				player.setColour(colour);
 			}
 		} catch (InvalidColourException e) {
@@ -65,7 +62,6 @@ public class PlayerHandler {
 			client.printMessage("ERROR: Invalid board arguments!");
 			return;
 		} else {
-			System.out.println("board is: " + board);
 			go.updateBoard(board);
 		}
 
@@ -78,7 +74,7 @@ public class PlayerHandler {
 			valid = go.checkValidity(move);
 			client.printMessage("Move valid: " + valid);
 		} while (!valid);
-		
+
 		go.setStone(move);
 		try {
 			client.sendMessage(ProtocolMessages.MOVE + ProtocolMessages.DELIMITER + move);
@@ -107,7 +103,7 @@ public class PlayerHandler {
 			client.printMessage("Server approved your move.");
 			go.updateBoard(board);	
 		} else if (valid.equals(Character.toString(ProtocolMessages.INVALID))){
-			client.printMessage("Server disapproves your move, very disappointing.");
+			client.printMessage("Server disapproved your move, very disappointing.");
 		}	
 	}
 
@@ -121,16 +117,36 @@ public class PlayerHandler {
 		client.closeConnection();
 	}
 
+	public void setColour(String colour) throws InvalidColourException {
+		if (colour.equalsIgnoreCase(Character.toString(ProtocolMessages.WHITE))) 
+			this.colour = true;
+		else if (colour.equalsIgnoreCase(Character.toString(ProtocolMessages.BLACK))) {
+			this.colour = false;
+		} else {
+			throw new InvalidColourException("ERROR: No valid colour provided to player!");
+		}	
+	}
 
 	public Client getClient() {
 		return this.client;
+	}
+	
+	public GoGame getGame() {
+		return this.go;
+	}
+	
+	public boolean getColour() {
+		return this.colour;
+	}
+	
+	public void setGame(GoGame go) {
+		this.go = go;
 	}
 
 	public static void main (String[] args) {
 		PlayerHandler p = new PlayerHandler(new Client());
 		p.startGame("S;UUUUUUUUU;black");
 		p.doTurn("T;UUUUUWUUU");
-		
 	}
-	
+
 }

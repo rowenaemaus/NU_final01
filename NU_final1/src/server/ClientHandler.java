@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 
 import Protocol.ProtocolMessages;
+import exceptions.InvalidColourException;
 
 public class ClientHandler implements Runnable{
 
@@ -20,6 +21,7 @@ public class ClientHandler implements Runnable{
 	private Game game;
 	private Server srv;
 	private String name;
+	private boolean colour;
 
 	public ClientHandler(Socket sock, Server srv, String name) throws IOException {
 		try {
@@ -71,14 +73,6 @@ public class ClientHandler implements Runnable{
 		}
 	}
 
-
-	// stuur turn en luister exclusief naar diegene
-
-	// check validity
-	// if niet valid ga naar end
-	// als wel valid dan zet de move op bord
-
-
 	public void sendToClient(String s) {
 		try {
 			out.write(s);
@@ -98,6 +92,20 @@ public class ClientHandler implements Runnable{
 		this.game = g;
 	}
 
+	public void setColour(char colour) throws InvalidColourException {
+		if (colour == ProtocolMessages.WHITE) 
+			this.colour = true;
+		else if (colour == ProtocolMessages.BLACK) {
+			this.colour = false;
+		} else {
+			throw new InvalidColourException("ERROR: No valid colour provided to player!");
+		}
+	}
+	
+	public boolean getColour() {
+		return this.colour;
+	}
+	
 	public boolean getConnected() {
 		return this.connected;
 	}
