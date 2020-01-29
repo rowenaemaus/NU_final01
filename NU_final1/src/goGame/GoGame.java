@@ -161,7 +161,7 @@ public class GoGame {
 	public void checkCaptured(int curStone) {
 		captureCheck.add(curStone);
 		HashMap<Character, Set<Integer>> neighbours = getNeighbours(curStone);
-		
+
 		if (neighbours.keySet().contains(ProtocolMessages.UNOCCUPIED)) {
 			stonesToKeep.addAll(captureCheck);
 			captureCheck.clear();
@@ -187,13 +187,20 @@ public class GoGame {
 	 * @param index
 	 * @return The next stone to check whether it is captured
 	 */
-	public int nextIndex(int curIndex) {
-		int nextIndex = -1;
-//		indicesWhite.indexOf();
-		
-		// return de volgende index van indices die niet in tokeep of toremove zit
-		return -1;
+	public int nextIndex(int curStone) {
+		int stoneIndex = indicesWhite.indexOf(curStone);
 
+		int nextStoneIndex = stoneIndex+1;
+
+		while (nextStoneIndex < indicesWhite.size()) {
+			if (!stonesToKeep.contains(indicesWhite.get(nextStoneIndex)) && !stonesToRemove.contains(indicesWhite.get(nextStoneIndex))) {
+				return nextStoneIndex;
+			} else {
+				nextStoneIndex++;
+			}
+		}
+
+		return -1;
 	}
 
 	public void getIndices(){

@@ -29,6 +29,7 @@ public class Client implements Runnable{
 
 	private boolean connected;
 	private boolean playing;
+	private boolean askSetup = false;
 
 	public Client() {
 		System.out.println("Welcome, anonymous client, let me set stuff up...");
@@ -43,31 +44,35 @@ public class Client implements Runnable{
 		connected = false;
 		protocolVersion = "1.0";
 		name = "Rowena";
-		playertype = "computer";
+		playertype = "human";
 		playing = false;
 
-		askSetup();
+		if (askSetup) {askSetup();}
 	}
 
 
 	public void askSetup() {
-//		Scanner keyboard = new Scanner(System.in);
-//		System.out.println("First, what is your name?");
-//		this.name = keyboard.next();
-//
-//		System.out.println(name + ", what IP-address would you like to connect to?");
-//		this.host = keyboard.next();
-//
-//		System.out.println(name + ", what port do you want to connect to?");
-//		this.port = keyboard.nextInt();
-//
-//		System.out.println("Do you want to play with (1).human or (2).computer player?");
-//		playertype = keyboard.next();
+		Scanner keyboard = new Scanner(System.in);
+		System.out.println("First, what is your name?");
+		this.name = keyboard.next();
+
+		System.out.println(name + ", what IP-address would you like to connect to?");
+		this.host = keyboard.next();
+
+		System.out.println(name + ", what port do you want to connect to?");
+		this.port = keyboard.nextInt();
+
+		System.out.println("Do you want to play with (1).human or (2).computer player?");
+		playertype = keyboard.next();
 
 		System.out.println("Aight leggo >>>>");
 		System.out.println(">>>>>>>>>>>>>>>>");
 	}
 
+	/**
+	 * Determine what type of player should be instantiated
+	 * @param answer
+	 */
 	public void determinePlayer(String answer) {
 		if (answer.equalsIgnoreCase("human") || answer.contains("1")) {
 			playertype = "human";

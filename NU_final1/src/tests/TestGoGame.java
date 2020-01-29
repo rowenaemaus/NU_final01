@@ -48,9 +48,12 @@ public class TestGoGame {
 	@Test
 	public void testCheckValidity() {
 		go.newBoard(board);
-		assertFalse(go.checkValidity(-1));		
-		assertFalse(go.checkValidity(go.getBoard().length()+1));
-		assertTrue(go.checkValidity(go.getBoard().length()-1));
+		assertFalse(go.checkValidity("-1"));	
+		
+		String tooHigh = ((Integer) (go.getBoard().length()+1)).toString();
+		assertFalse(go.checkValidity(tooHigh));
+		String tooLow = ((Integer) (go.getBoard().length()-1)).toString();
+		assertTrue(go.checkValidity(tooLow));
 	}
 	
 	@Test
