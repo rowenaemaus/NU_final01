@@ -1,6 +1,10 @@
 package goGame;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import com.nedap.go.gui.GoGUIIntegrator;
@@ -16,6 +20,13 @@ public class GoGame {
 	private Set<String> prevBoards = new HashSet<String>();
 	private String currentBoard;
 	private boolean useGUI = false;
+
+	private List<Integer> indicesWhite = new ArrayList<Integer>();
+	private List<Integer> indicesBlack = new ArrayList<Integer>();
+	private Set<Integer> stonesToKeep = new HashSet<Integer>();
+	private Set<Integer> stonesToRemove = new HashSet<Integer>();
+	private Set<Integer> captureCheck = new HashSet<Integer>();
+
 
 	public GoGame (int dimension, boolean useGUI) {
 		this.dimension = dimension;
@@ -33,11 +44,15 @@ public class GoGame {
 	}
 
 	/**
-	 * Creates a new board for a new game
+	 * Sets the board argument as current board and optionally initialises the gui
 	 * @param board
 	 */
 	public void newBoard(String board) {
 		if (useGUI) {setUpGUI();}
+		this.currentBoard = board;
+	}
+
+	public void setBoard(String board) {
 		this.currentBoard = board;
 	}
 
@@ -67,16 +82,27 @@ public class GoGame {
 	/**
 	 * Checks whether a move is valid to make given the board and 
 	 * previous boards.
-	 * @param move The one-dimensional index of the move 
+	 * @param string The one-dimensional index of the move 
 	 * @return Whether the move is valid (true if valid, false if invalid)
 	 */
-	public boolean checkValidity(int move) {
-		if(isField(move) && isEmpty(move)) {
+	public boolean checkValidity(String move) {
+		if (move.equalsIgnoreCase("pass")) {
+			return true;
+		}  
+
+		int moveInt = -1;
+		try { 
+			moveInt = Integer.parseInt(move);
+		} catch (NumberFormatException e) {
+			System.out.println("ERROR: Unable to parse move to integer.");
+			return false;
+		}
+
+		if(isField(moveInt) && isEmpty(moveInt) && !isFull()) {
 			String boardAfterMove = deepCopy();
-			boardAfterMove = setStone(move);
+			boardAfterMove = setStone(moveInt);
 			return prevBoards.contains(boardAfterMove) ? false : true;
 		} else {
-			System.out.println("ERROR: Impossible move!");
 			return false;
 		}
 	}
@@ -107,6 +133,94 @@ public class GoGame {
 				g.addStone(getRow(i), getColumn(i), colour);
 			}
 		}
+	}
+
+	/**
+	 * Computes the board by processing the capturings.
+	 * @return An updated board after the captured stones have been removed
+	 */
+	public String computeResult() {
+		stonesToKeep.clear();
+		stonesToRemove.clear();
+		captureCheck.clear();
+		getIndices();
+
+		int curStone = indicesWhite.get(0);
+		while ((stonesToKeep.size()+stonesToRemove.size()) < indicesWhite.size()) {
+			checkCaptured(curStone);
+			curStone = nextIndex(curStone);
+		}
+		return removeStones();
+	}
+
+	/**
+	 * Checks if a stone is captured between other the other colour or whether there
+	 * is still an escape (Unoccupied)
+	 * @param curStone The stone to check for
+	 */
+	public void checkCaptured(int curStone) {
+		captureCheck.add(curStone);
+		HashMap<Character, Set<Integer>> neighbours = getNeighbours(curStone);
+		
+		if (neighbours.keySet().contains(ProtocolMessages.UNOCCUPIED)) {
+			stonesToKeep.addAll(captureCheck);
+			captureCheck.clear();
+			return;
+		} else if (neighbours.keySet().size() == 1 ) {
+			stonesToRemove.add(curStone);
+			if (neighbours.containsKey(ProtocolMessages.WHITE)) {
+				stonesToKeep.addAll(neighbours.get(ProtocolMessages.WHITE));
+			}
+			return;
+		} else if (neighbours.keySet().contains(ProtocolMessages.WHITE)) {
+			for (Integer i : neighbours.get(ProtocolMessages.WHITE)) {
+				checkCaptured(i);
+			}
+		} else {
+			return;
+		}
+	}
+
+	/**
+	 * Finds the next index (stone) to investigate whether it is captured. Ignores
+	 * stones that are already investigated.
+	 * @param index
+	 * @return The next stone to check whether it is captured
+	 */
+	public int nextIndex(int curIndex) {
+		int nextIndex = -1;
+//		indicesWhite.indexOf();
+		
+		// return de volgende index van indices die niet in tokeep of toremove zit
+		return -1;
+
+	}
+
+	public void getIndices(){
+		for (int i = 0; i < currentBoard.length(); i++) {
+			if (currentBoard.charAt(i) == ProtocolMessages.BLACK) {
+				this.indicesBlack.add(i);
+			} else if (currentBoard.charAt(i) == ProtocolMessages.WHITE) {
+				this.indicesWhite.add(i);
+			} else {
+				continue;
+			}
+		}
+	}
+
+	public HashMap<Character, Set<Integer>> getNeighbours(int index){
+		// returns a list of the neighbours of a given index
+		// ignores indices of this colour die al geweest zijn en ignores de randen
+		// ignore dus de tokeep en toremove ones
+		return null;
+	}
+
+	public String removeStones() {
+		StringBuilder tmpBoard = new StringBuilder(deepCopy());
+		for (Integer i : stonesToRemove) {
+			tmpBoard.setCharAt(i, ProtocolMessages.UNOCCUPIED);
+		}
+		return tmpBoard.toString();
 	}
 
 	/**
@@ -144,7 +258,7 @@ public class GoGame {
 	public char getField(int i) {
 		return currentBoard.charAt(i);
 	}
-	
+
 	/**
 	 * Checks whether the provided index is indeed a valid field at the board
 	 * @param index A 1-dimensional index of a move
@@ -152,6 +266,10 @@ public class GoGame {
 	 */
 	public boolean isField(int index) {
 		return index >= 0 && index < currentBoard.length();
+	}
+
+	public boolean isFull() {
+		return !currentBoard.contains(Character.toString(ProtocolMessages.UNOCCUPIED));
 	}
 
 	public void reset() {
@@ -174,7 +292,7 @@ public class GoGame {
 	public String getBoard() {
 		return this.currentBoard;
 	}
-	
+
 	public GoGUIIntegrator getGUI() {
 		return this.g;
 	}

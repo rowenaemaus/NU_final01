@@ -48,7 +48,7 @@ class TestGo {
 		
 		
 		
-		PlayerHandler p = new PlayerHandler(new Client());
+		PlayerHandler p = new PlayerHandler(new Client(), "human");
 		p.startGame("S;UUUUUUUUU;black");
 
 

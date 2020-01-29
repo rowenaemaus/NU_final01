@@ -27,7 +27,7 @@ public class TestPlayerHandler {
 	public static void setUp() {
 		System.setOut(new PrintStream(outContent));
 
-		handler = new PlayerHandler(new Client());
+		handler = new PlayerHandler(new Client(), "human");
 		handler.getClient().createConnection();
 		dimension = 10;
 		board = Character.toString(ProtocolMessages.UNOCCUPIED).repeat(dimension*dimension);

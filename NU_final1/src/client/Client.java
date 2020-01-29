@@ -7,13 +7,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Scanner;
 
 import Protocol.ProtocolMessages;
 import exceptions.HandShakeException;
 import exceptions.ServerUnavailableException;
-import goGame.GoGame;
-import player.HumanPlayer;
-import player.Player;
 
 public class Client implements Runnable{
 	private String host;
@@ -26,17 +25,56 @@ public class Client implements Runnable{
 	private PlayerHandler handler;
 	private final String protocolVersion;
 	private String name;
+	private String playertype;
 
 	private boolean connected;
 	private boolean playing;
 
 	public Client() {
+		System.out.println("Welcome, anonymous client, let me set stuff up...");
+		try {
+			host = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			System.out.println(e);
+			e.printStackTrace();
+		}
 		port = 8070;
 		socket = null;
 		connected = false;
 		protocolVersion = "1.0";
 		name = "Rowena";
+		playertype = "computer";
 		playing = false;
+
+		askSetup();
+	}
+
+
+	public void askSetup() {
+//		Scanner keyboard = new Scanner(System.in);
+//		System.out.println("First, what is your name?");
+//		this.name = keyboard.next();
+//
+//		System.out.println(name + ", what IP-address would you like to connect to?");
+//		this.host = keyboard.next();
+//
+//		System.out.println(name + ", what port do you want to connect to?");
+//		this.port = keyboard.nextInt();
+//
+//		System.out.println("Do you want to play with (1).human or (2).computer player?");
+//		playertype = keyboard.next();
+
+		System.out.println("Aight leggo >>>>");
+		System.out.println(">>>>>>>>>>>>>>>>");
+	}
+
+	public void determinePlayer(String answer) {
+		if (answer.equalsIgnoreCase("human") || answer.contains("1")) {
+			playertype = "human";
+		} else {
+			System.out.println("Invalid playertype, default is computer player.");
+			playertype = "computer";
+		}
 	}
 
 	/**
@@ -60,14 +98,8 @@ public class Client implements Runnable{
 			e.printStackTrace();
 		}
 
-		handler = new PlayerHandler(this);
-		
-//		try {
-//			sendMessage("Q;");
-//		} catch (ServerUnavailableException e) {
-//			e.printStackTrace();
-//		}
-		
+		handler = new PlayerHandler(this, playertype);
+
 		setPlaying(true);
 		printMessage(name + " starting the game");
 
@@ -75,7 +107,7 @@ public class Client implements Runnable{
 		try {
 			msg = in.readLine();
 			while (msg != null) {
-				printMessage(String.format("Incoming server-message: \'%s\'", msg));
+				printMessage(String.format("Incoming server-message: \'%s\'", shorter(msg)));
 				handleCommand(msg);
 				out.newLine();
 				out.flush();
@@ -109,13 +141,15 @@ public class Client implements Runnable{
 		case ProtocolMessages.END :
 			handler.handleEnd(msg);
 			break;
-		default:
-//			printMessage(String.format("Incoming message from server: \'%s\'", msg));
 		}
 	}
 
 	public void printMessage(String s) {
 		System.out.println(s);
+	}
+
+	public String shorter(String s) {
+		return (s.length() > 50) ? (s.substring(0,50)+"...") : s; 
 	}
 
 	/**
@@ -138,7 +172,7 @@ public class Client implements Runnable{
 
 	}
 
-/*--------------------------------------------*/
+	/*--------------------------------------------*/
 	/* Connection methods */
 
 	public boolean createConnection() {
@@ -146,9 +180,8 @@ public class Client implements Runnable{
 
 		while (socket == null) {
 			try { 
-				InetAddress addr = InetAddress.getLocalHost();
 				printMessage(String.format("Attempting to connect to port %d on %s", port, host));
-				socket = new Socket(addr, port);
+				socket = new Socket(host, port);
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 				printMessage("I/O set up for client!");
@@ -213,11 +246,11 @@ public class Client implements Runnable{
 	public boolean getPlaying() {
 		return this.playing;
 	}
-	
+
 	public void setPlaying(boolean playing) {
 		this.playing = playing;
 	}
-	
+
 	public String getName() {
 		return this.name;
 	}
@@ -234,10 +267,10 @@ public class Client implements Runnable{
 		return host;
 	}
 
-
 	/* Main */
 
 	public static void main (String[] args) {
-		new Thread(new Client()).start();
+		Client c = new Client();
+		new Thread(c).start();
 	}
 }

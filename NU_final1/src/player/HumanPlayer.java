@@ -12,9 +12,9 @@ public class HumanPlayer implements Player{
 	}
 
 	@Override
-	public int determineMove() {
+	public String determineMove() {
 		Scanner keyboard = new Scanner(System.in);
-		String answer = keyboard.nextLine();
+		String answer = keyboard.next();
 		int move = -1;
 			
 		try {
@@ -24,7 +24,7 @@ public class HumanPlayer implements Player{
 			e.printStackTrace();
 		}
 		
-		return move;
+		return ((Integer)move).toString();
 	}
 
 	@Override

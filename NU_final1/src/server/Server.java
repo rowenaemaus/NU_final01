@@ -52,7 +52,6 @@ public class Server implements Runnable {
 		while (openNewSocket) {
 			try {
 				setupSsock();
-
 				// TODO while wat wil je dit doen? Hoe eruit?
 				while (true) {
 					Socket sock = ssock.accept();
@@ -158,7 +157,7 @@ public class Server implements Runnable {
 	}
 
 	public String getHello() {
-		return (ProtocolMessages.HANDSHAKE + ProtocolMessages.DELIMITER + protocolVersion);
+		return (ProtocolMessages.HANDSHAKE + ProtocolMessages.DELIMITER + protocolVersion + ProtocolMessages.DELIMITER + "Welcome to serveRowena, ready to go.");
 	}
 
 	// _________________ MAIN _______________________________

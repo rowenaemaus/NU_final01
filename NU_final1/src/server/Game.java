@@ -1,9 +1,5 @@
 package server;
 
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import Protocol.ProtocolMessages;
 import exceptions.InvalidColourException;
 import goGame.GoGame;
@@ -17,6 +13,8 @@ public class Game implements Runnable {
 	private int boardDimension = 10; 
 	private Server srv;
 	private ClientHandler turn;
+
+	private String lastMove = null;
 
 	public Game() {
 
@@ -86,7 +84,7 @@ public class Game implements Runnable {
 	public synchronized void doTurn(ClientHandler caller) {
 		g.setColour(caller.getColour());
 		srv.printMessage(String.format("[%s] their turn.", turn.getName()));
-		caller.sendToClient(ProtocolMessages.TURN+ProtocolMessages.DELIMITER+g.getBoard());
+		caller.sendToClient(ProtocolMessages.TURN+ProtocolMessages.DELIMITER+g.getBoard()+ProtocolMessages.DELIMITER+lastMove);
 	}
 
 	/**
@@ -96,20 +94,27 @@ public class Game implements Runnable {
 	 * @param msg The message as received from the client
 	 */
 	public void handleCommand(ClientHandler caller, String msg) {
-		srv.printMessage("[" + caller.getName() + "] Incoming: " + msg);
+		srv.printMessage("[" + caller.getName() + "] Incoming: " + shorter(msg));
 		Character command = (msg.length() > 0) ? msg.charAt(0) : null;
 		if (command == null) {
 			srv.printMessage("Invalid command provided to server from [" + caller.getName() + "]");
 			return;
 		}
+		
+		srv.printMessage("Handling command. Received message: '" + shorter(msg) + "'");
 
 		switch (command) {
 		case ProtocolMessages.MOVE :
 			if (caller.equals(turn)) {
 				srv.printMessage("[" + caller.getName() + "] making a move");
 				handleMove(caller, msg);
-				this.turn = otherPlayer(caller);
-				doTurn(turn);
+				if (!g.isFull()) {
+					this.turn = otherPlayer(caller);
+					doTurn(turn);
+				} else {
+					System.out.println("Board is full! Game ended.");
+					endGame();
+				}
 			}
 			break;
 		case ProtocolMessages.QUIT :
@@ -117,9 +122,6 @@ public class Game implements Runnable {
 			otherPlayer(caller).sendToClient(String.format("[%s] indicated to quit the game!", caller.getName()));
 			endGame();
 			break;			
-		default :
-			srv.printMessage("Unhandled command. Received message: '" + msg + "'");
-			break;
 		}
 	}
 
@@ -137,8 +139,11 @@ public class Game implements Runnable {
 			return;
 		}
 
-		int moveInt = Integer.parseInt(move);
-		boolean valid = g.checkValidity(moveInt);
+		if (move.equalsIgnoreCase("pass")) {
+			lastMove = move;
+			return;
+		}
+		boolean valid = g.checkValidity(move);
 
 		if (!valid) {
 			caller.sendToClient(ProtocolMessages.END + ProtocolMessages.DELIMITER + "Sorry, invalid move, you lose!");
@@ -146,8 +151,10 @@ public class Game implements Runnable {
 			endGame();
 			srv.endGame(this);
 		} else {
-			g.setStone(moveInt);
-			this.turn = otherPlayer(turn);
+			int moveInt = Integer.parseInt(move);
+			String updatetBoard = g.setStone(moveInt);
+			g.setBoard(updatetBoard);
+			lastMove = ((Integer) moveInt).toString();
 		}
 
 		otherPlayer(caller).sendToClient(String.format("> [%s] says: %s", caller.getName(), msg));
@@ -167,6 +174,10 @@ public class Game implements Runnable {
 		srv.endGame(this);
 	}
 
+	public String shorter(String s) {
+		return (s.length() > 50) ? (s.substring(0,50)+"...") : s; 
+	}
+	
 	public ClientHandler otherPlayer(ClientHandler c) {
 		return c.equals(c1) ? c2 :c1;
 	}

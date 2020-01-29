@@ -4,6 +4,7 @@ import Protocol.ProtocolMessages;
 import exceptions.InvalidColourException;
 import exceptions.ServerUnavailableException;
 import goGame.GoGame;
+import player.ComputerPlayer;
 import player.HumanPlayer;
 import player.Player;
 
@@ -15,10 +16,14 @@ public class PlayerHandler {
 	private boolean colour;
 	private String playerName;
 
-	public PlayerHandler(Client client) {
+	public PlayerHandler(Client client, String playerType) {
 		this.client = client;
-//		colour = false;
-		player = new HumanPlayer();
+		
+		if (playerType.equals("human")) {
+			player = new HumanPlayer();
+		} else {
+			player = new ComputerPlayer();
+		}		
 		playerName = player.getName();
 	}
 
@@ -37,11 +42,13 @@ public class PlayerHandler {
 			if (board == null || colour == null) {
 				client.printMessage("ERROR: Invalid colour and board arguments!");
 			} else { 
-				go = new GoGame((int) Math.sqrt(board.length()),false);
+				int dimension = (int) Math.sqrt(board.length());
+				go = new GoGame(dimension,false);
 				go.newBoard(board);
 				go.setColour(colour);
 				setColour(colour);
 				player.setColour(colour);
+				if (player instanceof ComputerPlayer) {((ComputerPlayer) player).sendGame(go);;}
 			}
 		} catch (InvalidColourException e) {
 			System.out.println(e);
@@ -66,7 +73,7 @@ public class PlayerHandler {
 		}
 
 		boolean valid = false;
-		int move = -1;
+		String move = null;
 
 		do {
 			client.printMessage(String.format("%s, please determine a move!", client.getName()));
@@ -75,7 +82,9 @@ public class PlayerHandler {
 			client.printMessage("Move valid: " + valid);
 		} while (!valid);
 
-		go.setStone(move);
+		int moveInt = moveInt = Integer.parseInt(move);
+		String updatetBoard = go.setStone(moveInt);
+		go.setBoard(updatetBoard);
 		try {
 			client.sendMessage(ProtocolMessages.MOVE + ProtocolMessages.DELIMITER + move);
 		} catch (ServerUnavailableException e) {
@@ -144,7 +153,7 @@ public class PlayerHandler {
 	}
 
 	public static void main (String[] args) {
-		PlayerHandler p = new PlayerHandler(new Client());
+		PlayerHandler p = new PlayerHandler(new Client(), "computer");
 		p.startGame("S;UUUUUUUUU;black");
 		p.doTurn("T;UUUUUWUUU");
 	}
