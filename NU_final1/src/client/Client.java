@@ -29,7 +29,7 @@ public class Client implements Runnable{
 
 	private boolean connected;
 	private boolean playing;
-	private boolean askSetup = false;
+	private boolean askSetup = true;
 
 	public Client() {
 		System.out.println("Welcome, anonymous client, let me set stuff up...");
@@ -63,7 +63,8 @@ public class Client implements Runnable{
 		this.port = keyboard.nextInt();
 
 		System.out.println("Do you want to play with (1).human or (2).computer player?");
-		playertype = keyboard.next();
+		String answer = keyboard.next();
+		determinePlayer(answer);
 
 		System.out.println("Aight leggo >>>>");
 		System.out.println(">>>>>>>>>>>>>>>>");

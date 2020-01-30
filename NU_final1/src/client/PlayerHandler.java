@@ -79,7 +79,7 @@ public class PlayerHandler {
 			client.printMessage(String.format("%s, please determine a move!", client.getName()));
 			move = player.determineMove();
 			valid = go.checkValidity(move);
-			client.printMessage("Move valid: " + valid);
+			client.printMessage("Your move: " + move + ", valid: " + valid);
 		} while (!valid);
 
 		int moveInt = moveInt = Integer.parseInt(move);

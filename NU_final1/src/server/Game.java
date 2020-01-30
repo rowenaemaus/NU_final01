@@ -16,9 +16,9 @@ public class Game implements Runnable {
 
 	private String lastMove = null;
 
-	public Game() {
-
-	}
+//	public Game() {
+//
+//	}
 
 	/**
 	 * Setting up a new game, with two provided clienthandlers (so one handler per client)
@@ -83,6 +83,7 @@ public class Game implements Runnable {
 	 */
 	public synchronized void doTurn(ClientHandler caller) {
 		g.setColour(caller.getColour());
+		System.out.println(String.format("Colour for %s set to %s", caller.getName(), caller.getColour()));
 		srv.printMessage(String.format("[%s] their turn.", turn.getName()));
 		caller.sendToClient(ProtocolMessages.TURN+ProtocolMessages.DELIMITER+g.getBoard()+ProtocolMessages.DELIMITER+lastMove);
 	}
@@ -191,8 +192,8 @@ public class Game implements Runnable {
 	}
 
 	public static void main(String[] a) {
-		Game game = new Game();
-		game.setUpGame();
+//		Game game = new Game();
+//		game.setUpGame();
 	}
 
 

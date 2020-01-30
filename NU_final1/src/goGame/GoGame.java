@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import com.nedap.go.gui.GoGUIIntegrator;
 
@@ -15,7 +16,7 @@ import exceptions.InvalidColourException;
 public class GoGame {
 
 	private GoGUIIntegrator g;
-	private int dimension;
+	private Integer dimension = null;
 	private boolean colour = false; // true = white
 	private Set<String> prevBoards = new HashSet<String>();
 	private String currentBoard;
@@ -26,8 +27,9 @@ public class GoGame {
 	private Set<Integer> stonesToKeep = new HashSet<Integer>();
 	private Set<Integer> stonesToRemove = new HashSet<Integer>();
 	private Set<Integer> captureCheck = new HashSet<Integer>();
-
-
+	
+	private List<Integer> colourToCheck;
+	
 	public GoGame (int dimension, boolean useGUI) {
 		this.dimension = dimension;
 		this.useGUI = useGUI;
@@ -115,8 +117,9 @@ public class GoGame {
 	public String setStone(int move) {
 		StringBuilder updatedBoard = new StringBuilder(currentBoard);
 		updatedBoard.setCharAt(move, getColourChar());
+		String updatedBoardString = computeResult(updatedBoard.toString());
 		if (useGUI) {boardToGUI(updatedBoard.toString());}
-		return updatedBoard.toString();
+		return updatedBoardString;
 	}
 
 	/**
@@ -139,18 +142,25 @@ public class GoGame {
 	 * Computes the board by processing the capturings.
 	 * @return An updated board after the captured stones have been removed
 	 */
-	public String computeResult() {
+	public String computeResult(String board) {
 		stonesToKeep.clear();
 		stonesToRemove.clear();
 		captureCheck.clear();
-		getIndices();
-
-		int curStone = indicesWhite.get(0);
-		while ((stonesToKeep.size()+stonesToRemove.size()) < indicesWhite.size()) {
-			checkCaptured(curStone);
-			curStone = nextIndex(curStone);
+		getIndices();		
+		colourToCheck = getColourChar() == ProtocolMessages.WHITE ? indicesWhite : indicesBlack;
+		
+		if (!indicesWhite.isEmpty() && !indicesBlack.isEmpty()) {
+			int curStone = colourToCheck.get(0);
+			while ((stonesToKeep.size()+stonesToRemove.size()) < colourToCheck.size()) {
+				checkCaptured(curStone);
+				curStone = nextIndex(curStone);
+				if (curStone == -1) {
+					break;
+				}
+			}
+			return removeStones();
 		}
-		return removeStones();
+		return board;
 	}
 
 	/**
@@ -159,25 +169,30 @@ public class GoGame {
 	 * @param curStone The stone to check for
 	 */
 	public void checkCaptured(int curStone) {
+		char colour = getColourChar();
 		captureCheck.add(curStone);
 		HashMap<Character, Set<Integer>> neighbours = getNeighbours(curStone);
+		
+		System.out.println("Neighbours is: " + neighbours.toString());
 
-		if (neighbours.keySet().contains(ProtocolMessages.UNOCCUPIED)) {
-			stonesToKeep.addAll(captureCheck);
-			captureCheck.clear();
-			return;
-		} else if (neighbours.keySet().size() == 1 ) {
-			stonesToRemove.add(curStone);
-			if (neighbours.containsKey(ProtocolMessages.WHITE)) {
-				stonesToKeep.addAll(neighbours.get(ProtocolMessages.WHITE));
+		if (!neighbours.isEmpty()) {
+			if (neighbours.keySet().contains(ProtocolMessages.UNOCCUPIED)) {
+				stonesToKeep.addAll(captureCheck);
+				captureCheck.clear();
+				return;
+			} else if (neighbours.keySet().size() == 1) {
+				stonesToRemove.add(curStone);
+				if (neighbours.containsKey(colour)) {
+					stonesToKeep.addAll(neighbours.get(colour));
+				}
+				return;
+			} else if (neighbours.keySet().contains(colour)) {
+				for (Integer i : neighbours.get(colour)) {
+					checkCaptured(i);
+				}
+			} else {
+				return;
 			}
-			return;
-		} else if (neighbours.keySet().contains(ProtocolMessages.WHITE)) {
-			for (Integer i : neighbours.get(ProtocolMessages.WHITE)) {
-				checkCaptured(i);
-			}
-		} else {
-			return;
 		}
 	}
 
@@ -188,18 +203,17 @@ public class GoGame {
 	 * @return The next stone to check whether it is captured
 	 */
 	public int nextIndex(int curStone) {
-		int stoneIndex = indicesWhite.indexOf(curStone);
+		int stoneIndex = colourToCheck.indexOf(curStone);
 
 		int nextStoneIndex = stoneIndex+1;
 
-		while (nextStoneIndex < indicesWhite.size()) {
-			if (!stonesToKeep.contains(indicesWhite.get(nextStoneIndex)) && !stonesToRemove.contains(indicesWhite.get(nextStoneIndex))) {
+		while (nextStoneIndex < colourToCheck.size()) {
+			if (!stonesToKeep.contains(colourToCheck.get(nextStoneIndex)) && !stonesToRemove.contains(colourToCheck.get(nextStoneIndex))) {
 				return nextStoneIndex;
 			} else {
 				nextStoneIndex++;
 			}
 		}
-
 		return -1;
 	}
 
@@ -216,17 +230,297 @@ public class GoGame {
 	}
 
 	public HashMap<Character, Set<Integer>> getNeighbours(int index){
-		// returns a list of the neighbours of a given index
-		// ignores indices of this colour die al geweest zijn en ignores de randen
-		// ignore dus de tokeep en toremove ones
-		return null;
+		HashMap<Character, Set<Integer>> neighbours = new HashMap<Character, Set<Integer>>();
+
+		if (index == 0 || index == dimension-1 || index == dimension*dimension-dimension || index == dimension*dimension-1) {
+			neighbours = getCornerNeighbours(index);
+		} else if (index > 0 && index < dimension-1 ) {
+			neighbours = getEdgeNeighbours(index);
+		} else if (index % 10 == 0) {
+			neighbours = getEdgeNeighbours(index);
+		} else if (index % dimension == dimension-1) {
+			neighbours = getEdgeNeighbours(index);
+		} else if (index > (dimension*dimension-dimension) && index < (dimension*dimension-1)){
+			neighbours = getEdgeNeighbours(index);
+		} else {
+			neighbours = getDefaultNeighbours(index);
+		}
+
+		return removeChecked(neighbours);
+
+		// ignore de tokeep en toremove ones
 	}
 
+	public HashMap<Character, Set<Integer>> getDefaultNeighbours(int index){
+		HashMap<Character, Set<Integer>> neighbours = new HashMap<Character, Set<Integer>>();
+
+		Set<Integer> locationChar1 = new HashSet<Integer>();
+		Set<Integer> locationChar2 = new HashSet<Integer>();
+		Set<Integer> locationChar3 = new HashSet<Integer>();
+
+		int indexUpper = index-dimension;
+		System.out.println("indexupper:" + indexUpper);
+		char charUpper = currentBoard.charAt(indexUpper);
+		System.out.println("charUpper"+ charUpper);
+
+		locationChar1.add(indexUpper);
+		neighbours.put(charUpper, locationChar1);
+
+		int indexLeft = index-1;
+		char charLeft = currentBoard.charAt(indexLeft);
+		if (charLeft == charUpper) {
+			neighbours.get(charUpper).add(indexLeft);
+		} else {
+			locationChar2.add(indexLeft);
+			neighbours.put(charLeft, locationChar2);
+		}
+
+		int indexRight = index+1;
+		char charRight = currentBoard.charAt(indexRight);
+		if (charRight == charUpper) {
+			neighbours.get(charUpper).add(indexRight);
+		} else if (charRight == charLeft) {
+			neighbours.get(charLeft).add(indexRight);
+		} else {
+			locationChar3.add(indexRight);
+			neighbours.put(charRight, locationChar3);
+		}
+
+		int indexBelow = index+dimension;
+		char charBelow = currentBoard.charAt(indexBelow);
+		if (charBelow == charUpper) {
+			neighbours.get(charUpper).add(indexBelow);
+		} else if (charBelow == charLeft) {
+			neighbours.get(charLeft).add(indexBelow);
+		} else if (charBelow == charRight) {
+			neighbours.get(charRight).add(indexBelow);
+		}
+		System.out.println(neighbours);
+		return neighbours;
+	}
+
+	public HashMap<Character, Set<Integer>> getEdgeNeighbours(int index){
+		HashMap<Character, Set<Integer>> neighbours = new HashMap<Character, Set<Integer>>();
+
+		Set<Integer> locationChar1 = new HashSet<Integer>();
+		Set<Integer> locationChar2 = new HashSet<Integer>();
+		Set<Integer> locationChar3 = new HashSet<Integer>();
+
+		if (index > 0 && index < dimension-1 ) {							// upper edge
+			int indexLeft = index-1;
+			char charLeft = currentBoard.charAt(indexLeft);
+
+			locationChar1.add(indexLeft);
+			neighbours.put(charLeft, locationChar1);
+
+			int indexRight = index+1;
+			char charRight = currentBoard.charAt(indexRight);
+			if (charRight == charLeft) {
+				neighbours.get(charLeft).add(indexRight);
+			} else {
+				locationChar2.add(indexRight);
+				neighbours.put(charRight, locationChar2);
+			}
+
+			int indexBelow = index + dimension;
+			char charBelow = currentBoard.charAt(indexBelow);
+			if (charBelow == charLeft) {
+				neighbours.get(charLeft).add(indexBelow);
+			} else if (charBelow == charRight) {
+				neighbours.get(charRight).add(indexBelow);
+			} else {
+				locationChar3.add(indexBelow);
+				neighbours.put(charBelow, locationChar3);
+			}			
+		} else if (index % 10 == 0) {										// left edge
+			int indexUpper = index-dimension;
+			char charUpper = currentBoard.charAt(indexUpper);
+
+			locationChar1.add(indexUpper);
+			neighbours.put(charUpper, locationChar1);
+
+			int indexRight = index+1;
+			char charRight = currentBoard.charAt(indexRight);
+			if (charRight == charUpper) {
+				neighbours.get(charUpper).add(indexRight);
+			} else {
+				locationChar2.add(indexRight);
+				neighbours.put(charRight, locationChar2);
+			}
+
+			int indexBelow = index + dimension;
+			char charBelow = currentBoard.charAt(indexBelow);
+			if (charBelow == charUpper) {
+				neighbours.get(charUpper).add(indexBelow);
+			} else if (charBelow == charRight) {
+				neighbours.get(charRight).add(indexBelow);
+			} else {
+				locationChar3.add(indexBelow);
+				neighbours.put(charBelow, locationChar3);
+			}
+		} else if (index % dimension == dimension-1) {						// right edge 
+			int indexUpper = index-dimension;
+			char charUpper = currentBoard.charAt(indexUpper);
+
+			locationChar1.add(indexUpper);
+			neighbours.put(charUpper, locationChar1);
+
+			int indexLeft = index-1;
+			char charLeft = currentBoard.charAt(indexLeft);
+			if (charLeft == charUpper) {
+				neighbours.get(charUpper).add(indexLeft);
+			} else {
+				locationChar2.add(indexLeft);
+				neighbours.put(charLeft, locationChar2);
+			}
+
+			int indexBelow = index + dimension;
+			char charBelow = currentBoard.charAt(indexBelow);
+			if (charBelow == charUpper) {
+				neighbours.get(charBelow).add(indexBelow);
+			} else if (charBelow == charLeft) {
+				neighbours.get(charLeft).add(indexBelow);
+			} else {
+				locationChar3.add(indexBelow);
+				neighbours.put(charBelow, locationChar3);
+			}
+		} else if (index > (dimension*dimension-dimension) && index < (dimension*dimension-1)){
+			int indexUpper = index-dimension;
+			char charUpper = currentBoard.charAt(indexUpper);
+
+			locationChar1.add(indexUpper);
+			neighbours.put(charUpper, locationChar1);
+
+			int indexLeft = index-1;
+			char charLeft = currentBoard.charAt(indexLeft);
+			if (charLeft == charUpper) {
+				neighbours.get(charUpper).add(indexLeft);
+			} else {
+				locationChar2.add(indexLeft);
+				neighbours.put(charLeft, locationChar2);
+			}
+
+			int indexRight = index+1;
+			char charRight = currentBoard.charAt(indexRight);
+			if (charRight == charUpper) {
+				neighbours.get(charUpper).add(indexRight);
+			} else if (charRight == charLeft) {
+				neighbours.get(charLeft).add(indexRight);
+			} else {
+				locationChar3.add(indexRight);
+				neighbours.put(charRight, locationChar3);
+			}
+		}
+		return neighbours;
+	}
+
+	public HashMap<Character, Set<Integer>> getCornerNeighbours(int index){
+		HashMap<Character, Set<Integer>> neighbours = new HashMap<Character, Set<Integer>>();
+
+		Set<Integer> locationChar1 = new HashSet<Integer>();
+		Set<Integer> locationChar2 = new HashSet<Integer>();
+
+		if (index == 0) {
+			int indexLower = dimension;
+			char charLower = currentBoard.charAt(indexLower);						// get neighbour below
+
+			locationChar1.add(indexLower);											// add
+			neighbours.put(charLower, locationChar1);								// add this neighbour to the set of neighbours
+
+			int indexRight = index+1;
+			char charRight = currentBoard.charAt(indexRight);						// get right neighbour
+			if (neighbours.containsKey(charRight)) {								// if this char is already in the neighbour set
+				neighbours.get(charLower).add(indexRight);							// add the location to the right as occurrence of same char
+			} else {																// if this char is different
+				locationChar2.add(indexRight);										// add
+				neighbours.put(currentBoard.charAt(indexRight), locationChar2);		// add this combi of char and location to neighbour set
+			}
+
+		} else if (index == dimension-1) {									// upper right corner
+			int indexLower = index+dimension;
+			char charLower = currentBoard.charAt(indexLower);
+
+			locationChar1.add(indexLower);									
+			neighbours.put(charLower, locationChar1);					
+
+			int indexLeft = index-1;
+			char charLeft = currentBoard.charAt(indexLeft);
+
+			if (neighbours.containsKey(charLeft)) {				
+				neighbours.get(charLower).add(indexLeft);					
+			} else {															
+				locationChar2.add(indexLeft);										
+				neighbours.put(currentBoard.charAt(indexLeft), locationChar2);	
+			}
+		} else if (index == (dimension*dimension-dimension)) { 				// lower left corner
+			int indexHigher = index-dimension;
+			char charHigher = currentBoard.charAt(indexHigher);
+
+			locationChar1.add(indexHigher);
+			neighbours.put(charHigher, locationChar1);
+
+			int indexRight = index+1;
+			char charRight = currentBoard.charAt(indexRight);
+			if (neighbours.containsKey(charRight)) {
+				neighbours.get(charHigher).add(indexRight);
+			} else {
+				locationChar2.add(indexRight);
+				neighbours.put(charRight, locationChar2);
+			}
+		} else if (index == (dimension*dimension-1)) {						// lower right corner
+			int indexHigher = index-dimension;
+			char charHigher = currentBoard.charAt(indexHigher);
+
+			locationChar1.add(indexHigher);
+			neighbours.put(charHigher, locationChar1);
+
+			int indexLeft = index-1;
+			char charLeft = currentBoard.charAt(indexLeft);
+			if (neighbours.containsKey(charLeft)) {
+				neighbours.get(charHigher).add(indexLeft);
+			} else {
+				locationChar2.add(indexLeft);
+				neighbours.put(charLeft, locationChar2);
+			}
+		}
+
+		return neighbours;
+	}
+
+
+	public HashMap<Character, Set<Integer>> removeChecked(HashMap<Character, Set<Integer>> neighbours) {
+		Iterator<Entry<Character, Set<Integer>>> entrySet = neighbours.entrySet().iterator();
+		
+		while (entrySet.hasNext()) {
+			Entry<Character, Set<Integer>> character = entrySet.next();
+			for (int i : character.getValue()) {
+				if (stonesToKeep.contains(i) || stonesToRemove.contains(i)) {
+					character.getValue().remove(i);
+					neighbours.get(character.getKey()).remove(i);
+				}
+				if (character.getValue().isEmpty()) {
+					neighbours.remove(character.getKey());
+				}
+			}	
+		}
+		return neighbours;
+	}
+
+	/**
+	 * Remove the stones from the current board
+	 * @return the board after removing the stones
+	 */
 	public String removeStones() {
+		System.out.println("Removing: " + stonesToRemove.toString());
+		
 		StringBuilder tmpBoard = new StringBuilder(deepCopy());
 		for (Integer i : stonesToRemove) {
 			tmpBoard.setCharAt(i, ProtocolMessages.UNOCCUPIED);
 		}
+		
+		System.out.println("cur:"+currentBoard);
+		System.out.println("new:"+tmpBoard);
+		
 		return tmpBoard.toString();
 	}
 

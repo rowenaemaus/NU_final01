@@ -16,7 +16,11 @@ public class HumanPlayer implements Player{
 		Scanner keyboard = new Scanner(System.in);
 		String answer = keyboard.next();
 		int move = -1;
-			
+		
+		if (answer.equalsIgnoreCase("pass")) {
+			return answer;
+		}
+		
 		try {
 			move = Integer.valueOf(answer);
 		} catch (NumberFormatException e) {
