@@ -27,9 +27,9 @@ public class GoGame {
 	private Set<Integer> stonesToKeep = new HashSet<Integer>();
 	private Set<Integer> stonesToRemove = new HashSet<Integer>();
 	private Set<Integer> captureCheck = new HashSet<Integer>();
-	
+
 	private List<Integer> colourToCheck;
-	
+
 	public GoGame (int dimension, boolean useGUI) {
 		this.dimension = dimension;
 		this.useGUI = useGUI;
@@ -148,7 +148,7 @@ public class GoGame {
 		captureCheck.clear();
 		getIndices();		
 		colourToCheck = getColourChar() == ProtocolMessages.WHITE ? indicesWhite : indicesBlack;
-		
+
 		if (!indicesWhite.isEmpty() && !indicesBlack.isEmpty()) {
 			int curStone = colourToCheck.get(0);
 			while ((stonesToKeep.size()+stonesToRemove.size()) < colourToCheck.size()) {
@@ -172,7 +172,7 @@ public class GoGame {
 		char colour = getColourChar();
 		captureCheck.add(curStone);
 		HashMap<Character, Set<Integer>> neighbours = getNeighbours(curStone);
-		
+
 		System.out.println("Neighbours is: " + neighbours.toString());
 
 		if (!neighbours.isEmpty()) {
@@ -220,13 +220,20 @@ public class GoGame {
 	public void getIndices(){
 		for (int i = 0; i < currentBoard.length(); i++) {
 			if (currentBoard.charAt(i) == ProtocolMessages.BLACK) {
-				this.indicesBlack.add(i);
+				if (!indicesBlack.contains(i)) {
+					this.indicesBlack.add(i);
+				}
 			} else if (currentBoard.charAt(i) == ProtocolMessages.WHITE) {
-				this.indicesWhite.add(i);
+				if (!indicesWhite.contains(i)) {
+					this.indicesWhite.add(i);
+				}
 			} else {
 				continue;
 			}
 		}
+
+		System.out.println("White indices: " + indicesWhite);
+		System.out.println("Black indices: " + indicesBlack);
 	}
 
 	public HashMap<Character, Set<Integer>> getNeighbours(int index){
@@ -247,8 +254,6 @@ public class GoGame {
 		}
 
 		return removeChecked(neighbours);
-
-		// ignore de tokeep en toremove ones
 	}
 
 	public HashMap<Character, Set<Integer>> getDefaultNeighbours(int index){
@@ -259,9 +264,7 @@ public class GoGame {
 		Set<Integer> locationChar3 = new HashSet<Integer>();
 
 		int indexUpper = index-dimension;
-		System.out.println("indexupper:" + indexUpper);
 		char charUpper = currentBoard.charAt(indexUpper);
-		System.out.println("charUpper"+ charUpper);
 
 		locationChar1.add(indexUpper);
 		neighbours.put(charUpper, locationChar1);
@@ -490,7 +493,7 @@ public class GoGame {
 
 	public HashMap<Character, Set<Integer>> removeChecked(HashMap<Character, Set<Integer>> neighbours) {
 		Iterator<Entry<Character, Set<Integer>>> entrySet = neighbours.entrySet().iterator();
-		
+
 		while (entrySet.hasNext()) {
 			Entry<Character, Set<Integer>> character = entrySet.next();
 			for (int i : character.getValue()) {
@@ -512,15 +515,11 @@ public class GoGame {
 	 */
 	public String removeStones() {
 		System.out.println("Removing: " + stonesToRemove.toString());
-		
+
 		StringBuilder tmpBoard = new StringBuilder(deepCopy());
 		for (Integer i : stonesToRemove) {
 			tmpBoard.setCharAt(i, ProtocolMessages.UNOCCUPIED);
 		}
-		
-		System.out.println("cur:"+currentBoard);
-		System.out.println("new:"+tmpBoard);
-		
 		return tmpBoard.toString();
 	}
 

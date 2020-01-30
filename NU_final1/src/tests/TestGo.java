@@ -18,6 +18,14 @@ import exceptions.HandShakeException;
 import goGame.GoGame;
 import server.Game;
 
+/**
+ * This test class was a first draft for testing the client server connection. In the 
+ * end I did not really work this out, and constructed other testclasses for more 
+ * specific testing.
+ *  
+ * @author rowena.emaus
+ *
+ */
 class TestGo {
 	private final static ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 	private final static PrintStream originalOut = System.out;
@@ -53,20 +61,7 @@ class TestGo {
 
 
 		GoGame g = new GoGame(10, false);
-//		
-//		c1.sendToClient("S;UUUUUUUUU;black");
-//		c2.sendToClient("S;UUUUUUUUU;white");
-//		c1.sendToClient("T;UUUUUUUUU");
-//		
-//		
-//		client.createConnection();
-//		assertThat(outContent.toString(), containsString("Attempting to connect to port"));
-//		outContent.reset();
-//		
-//		client.doHandshake();
-//		assertThat(outContent.toString(), containsString(" "));
-//		outContent.reset();
-//		
+
 	}
 
 	@AfterAll

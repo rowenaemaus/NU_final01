@@ -29,7 +29,7 @@ public class Client implements Runnable{
 
 	private boolean connected;
 	private boolean playing;
-	private boolean askSetup = true;
+	private boolean askSetup = false;
 
 	public Client() {
 		System.out.println("Welcome, anonymous client, let me set stuff up...");
